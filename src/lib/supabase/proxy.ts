@@ -9,7 +9,7 @@ export async function updateSession(request: NextRequest) {
   if (!supabaseConfigured()) return { response, userId: null as string | null };
 
   const supabase = createServerClient(env.supabaseUrl, env.supabaseAnonKey, {
-    cookieOptions: authCookieOptions,
+    cookieOptions: authCookieOptions(request.headers.get("x-forwarded-host") ?? request.headers.get("host")),
     cookies: {
       getAll() {
         return request.cookies.getAll();

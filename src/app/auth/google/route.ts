@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseConfigured } from "@/lib/env";
 import { safeNext } from "@/lib/redirect";
-import { APP_URL } from "@/lib/site";
+import { requestOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo: `${APP_URL}/auth/callback?next=${encodeURIComponent(next)}`, skipBrowserRedirect: true },
+    options: { redirectTo: `${await requestOrigin()}/auth/callback?next=${encodeURIComponent(next)}`, skipBrowserRedirect: true },
   });
   if (error || !data.url) return NextResponse.redirect(`${origin}/sign-in?error=oauth`);
   return NextResponse.redirect(data.url);

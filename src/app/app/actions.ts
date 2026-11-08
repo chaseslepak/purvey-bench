@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { getSession } from "@/lib/session";
-import { APP_URL } from "@/lib/site";
+import { requestOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 
 export type FormState = { error?: string; fieldErrors?: Record<string, string>; ok?: string } | undefined;
@@ -75,7 +75,7 @@ export async function inviteTeammate(_prev: FormState, form: FormData): Promise<
   if (error) return { error: error.message.includes("already a teammate") ? "That person is already on your team." : "Couldn't create the invite." };
   revalidatePath("/app/team");
   // Phase 4 sends this by email through Resend; until then the owner shares it.
-  return { ok: `${APP_URL}/invite/${token}` };
+  return { ok: `${await requestOrigin()}/invite/${token}` };
 }
 
 export async function removeTeammate(form: FormData) {

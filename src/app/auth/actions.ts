@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { supabaseConfigured } from "@/lib/env";
 import { safeNext } from "@/lib/redirect";
-import { APP_URL } from "@/lib/site";
+import { requestOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 import { verifyTurnstile } from "@/lib/turnstile";
 
@@ -13,8 +13,8 @@ export type AuthFormState = { error?: string; fieldErrors?: Record<string, strin
 
 const email = z.string().trim().toLowerCase().email("Enter a valid email address.");
 
-function confirmUrl(next: string) {
-  return `${APP_URL}/auth/confirm?next=${encodeURIComponent(next)}`;
+async function confirmUrl(next: string) {
+  return `${await requestOrigin()}/auth/confirm?next=${encodeURIComponent(next)}`;
 }
 
 function notConfigured(): AuthFormState {
@@ -33,7 +33,7 @@ export async function sendSignInLink(_prev: AuthFormState, form: FormData): Prom
   const { error } = await supabase.auth.signInWithOtp({
     email: parsed.data.email,
     // Sign-in never creates accounts; new people go through /sign-up.
-    options: { shouldCreateUser: false, emailRedirectTo: confirmUrl(safeNext(parsed.data.next)) },
+    options: { shouldCreateUser: false, emailRedirectTo: await confirmUrl(safeNext(parsed.data.next)) },
   });
   // Don't reveal whether an account exists.
   if (error && !/signups not allowed|user not found/i.test(error.message)) {
@@ -76,7 +76,7 @@ export async function signUp(_prev: AuthFormState, form: FormData): Promise<Auth
     email: parsed.data.email,
     options: {
       shouldCreateUser: true,
-      emailRedirectTo: confirmUrl("/app/onboarding"),
+      emailRedirectTo: await confirmUrl("/app/onboarding"),
       // Prefills onboarding; the organization is created there by create_organization().
       data: {
         name: parsed.data.name,
@@ -105,7 +105,7 @@ export async function sendInviteLink(_prev: AuthFormState, form: FormData): Prom
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithOtp({
     email: parsed.data.email,
-    options: { shouldCreateUser: true, emailRedirectTo: confirmUrl(`/invite/${parsed.data.token}`) },
+    options: { shouldCreateUser: true, emailRedirectTo: await confirmUrl(`/invite/${parsed.data.token}`) },
   });
   if (error) return { error: "We couldn't send the link. Please try again in a minute." };
   redirect(`/auth/check-email?email=${encodeURIComponent(parsed.data.email)}`);
