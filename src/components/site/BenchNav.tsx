@@ -11,8 +11,25 @@ export async function BenchNav() {
     <nav className="bench-subnav" aria-label="Purvey Bench">
       <Link href="/" className="bench-subnav_brand">Purvey Bench</Link>
       <div className="bench-subnav_links">
-        <Link href="/for-brokers" className="bench-subnav_link">For brokers</Link>
-        <Link href="/pricing" className="bench-subnav_link">Pricing</Link>
+        <Link href="/find" className="bench-subnav_link">Find brokers</Link>
+        {session?.org?.type === "brand" && (
+          <>
+            <Link href="/app/briefs" className="bench-subnav_link">Briefs</Link>
+            <Link href="/app/saved" className="bench-subnav_link">Saved</Link>
+          </>
+        )}
+        {session?.org?.type === "broker" && (
+          <>
+            <Link href="/app/listing" className="bench-subnav_link">Listing</Link>
+            <Link href="/app/analytics" className="bench-subnav_link">Analytics</Link>
+          </>
+        )}
+        {!session && (
+          <>
+            <Link href="/for-brokers" className="bench-subnav_link">For brokers</Link>
+            <Link href="/pricing" className="bench-subnav_link">Pricing</Link>
+          </>
+        )}
         {session ? (
           <>
             {session.isAdmin && <Link href="/admin" className="bench-subnav_link">Admin</Link>}

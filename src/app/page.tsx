@@ -37,7 +37,7 @@ export default function Home() {
               </div>
               <div className="button-group">
                 <div className="button_wrap" style={{ paddingLeft: 0 }}>
-                  <Link href="/sign-up?role=brand" className="button w-button">Find a broker</Link>
+                  <Link href="/find" className="button w-button">Find a broker</Link>
                 </div>
                 <div className="button_wrap" style={{ paddingLeft: 0 }}>
                   <Link href="/for-brokers" className="button is-outline w-button">List your brokerage</Link>

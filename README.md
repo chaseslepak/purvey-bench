@@ -116,6 +116,14 @@ Rules that must hold even for server code run as **triggers**, which also fire f
 - **Live** = comped, or `active`/`trialing`, or `past_due` for under 7 days. Cancel in the portal is cancel-at-period-end: Stripe keeps it `active` until the paid period ends, then `canceled` pauses the listing. Data is kept, so resubscribing restores everything.
 - `/app/billing` opens the Stripe Customer Portal (card, invoices, cancel) for owners.
 
+## Search and fit (brands)
+
+- `src/lib/fit.ts` is the fit score, unit-tested against the spec formula: weights states 35, retailers 30 (weekly 1.0, monthly 0.7, occasional 0.4), channels 15, category 15, distributors 5, averaged over only the parts the brief sets, with a 25-point conflict penalty (floor 0). Verified status and payment never change it.
+- `/find`: filters for state, region, retailer (typeahead), channel, category, distributor, verified only and taking new lines. Sorted by best fit to the selected brief by default (once a brief exists), or verified first, or recently updated. 24 per page; the empty state names the filter to loosen. Cards are public; contact details need a free brand account.
+- `/brokers/[slug]`: the public profile (indexable; draft and paused listings are hidden). Contact is revealed through `reveal_contact()`: logged once per brand and capped at 50 new reveals a day. Brands can also save and request a Purvey placement.
+- Briefs (`/app/briefs`) are private to the brand's team, autosave, and show their top 10 brokers with reasons. Saved brokers (`/app/saved`) have folders, private notes and a side-by-side compare of up to three.
+- Brokers get `/app/analytics`: 30 or 90 days of search impressions, profile views, contact reveals, saves and new conversations, plus suggestions drawn from anonymous search counts (`broker_suggestions()`). Brokers never see which brands searched or viewed.
+
 ## Tests
 
 ```bash
@@ -169,8 +177,8 @@ Runs 35 browser tests:
 ## Build phases
 
 1. **Foundation**: theme, chrome, visual diff, auth, organizations, schema + RLS + policy tests, seed.
-2. **Broker listing builder and Stripe billing** (this PR).
-3. Brand search, profiles, briefs with fit ranking, saved brokers.
+2. **Broker listing builder and Stripe billing**.
+3. **Brand search, profiles, briefs with fit ranking, saved brokers** (this PR).
 4. Messaging, realtime inbox, email notifications.
 5. Admin console.
 6. Embed and launch.

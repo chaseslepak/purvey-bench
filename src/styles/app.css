@@ -257,3 +257,27 @@ html[data-embed="1"] .section_hero { height: 640px; }
 :where([class*="bench-"]) :is(ul, ol) { color: inherit; font-size: inherit; }
 /* Blue links fail contrast on the light-blue notice; use ink, keep the underline. */
 .bench-notice .bench-link, .bench-notice .bench-link-btn { color: inherit; }
+
+/* ---------- Find ---------- */
+.bench-find { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: var(--pv-gap); align-items: start; }
+@media screen and (max-width: 991px) { .bench-find { grid-template-columns: 1fr; } }
+.bench-find_filters { padding: 24px; gap: 14px; }
+.bench-results { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--pv-gap); }
+@media screen and (max-width: 767px) { .bench-results { grid-template-columns: 1fr; } }
+.bench-result { position: relative; display: flex; flex-direction: column; }
+.bench-result_link { display: block; color: inherit; text-decoration: none; height: 100%; border-radius: var(--pv-radius-card); }
+.bench-result_link:hover .bench-lcard { border-color: var(--pv-blue); }
+.bench-result_actions { position: absolute; right: 18px; bottom: 18px; display: flex; gap: 8px; align-items: center; }
+.bench-result .bench-lcard { height: 100%; padding-bottom: 72px; }
+.bench-tile.is-static { display: grid; place-items: center; cursor: default; }
+.bench-tile.is-static:hover { outline: none; }
+.bench-tile.is-static[data-on] { background: var(--pv-blue); color: var(--pv-white); }
+.bench-profile_head { display: grid; grid-template-columns: 88px minmax(0, 1fr) auto; gap: 20px; align-items: center; }
+@media screen and (max-width: 479px) { .bench-profile_head { grid-template-columns: 64px minmax(0, 1fr); } .bench-profile_head > :last-child { grid-column: 1 / -1; } }
+.bench-plainlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.bench-kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--pv-gap); }
+@media screen and (max-width: 991px) { .bench-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media screen and (max-width: 479px) { .bench-kpis { grid-template-columns: 1fr; } }
+a.bench-chip { text-decoration: none; }
+.bench-chip[aria-current="page"] { background: var(--pv-dark); border-color: var(--pv-dark); color: var(--pv-white); }
+.bench-toolbar { background: var(--pv-white); border-radius: var(--pv-radius-nav); padding: 14px 20px; }
