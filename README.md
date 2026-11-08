@@ -66,7 +66,10 @@ Without Supabase keys the public pages still render, and sign-in shows a "not co
 | `NEXT_PUBLIC_APP_URL` | all | `https://bench.purveycpg.com` in production; used for magic-link and OAuth redirects |
 | `NEXT_PUBLIC_MAIN_SITE_URL` | all | `https://www.purveycpg.com`; header and footer links |
 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | all | Supabase project; the anon key is safe in the browser because RLS protects the data |
-| `SUPABASE_SERVICE_ROLE_KEY` | server only | Stripe webhooks and cron (phase 2+). **Never** expose it to the client |
+| `SUPABASE_SERVICE_ROLE_KEY` | server only | Billing sync (Stripe webhook, checkout return), cron, and upload validation. **Never** expose it to the client |
+| `STRIPE_SECRET_KEY` | server only | `sk_test_…` in preview, `sk_live_…` in production |
+| `STRIPE_WEBHOOK_SECRET` | server only | Signing secret of the Stripe webhook endpoint `https://bench.purveycpg.com/api/stripe/webhook` |
+| `CRON_SECRET` | server only | Vercel Cron sends it to `/api/cron/sync-listings` (daily re-check of grace periods and period ends) |
 | `COOKIE_DOMAIN` | all | `.purveycpg.com`, so the session works inside the purveycpg.com iframe. Applied only when the request host is on that domain, so previews and localhost still work |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | all / server | Turnstile. Without the secret, verification passes in development and **fails closed in production** |
 | `DATABASE_URL` | tests | Local Postgres for policy tests |
@@ -104,6 +107,15 @@ Migrations live in `supabase/migrations/`:
 
 Rules that must hold even for server code run as **triggers**, which also fire for the service role. For example, only a member of a brand organization can insert a conversation, and the brief summary is always built from the brand's own brief.
 
+## Billing (Stripe)
+
+- One product, **Bench Listing, $100/month USD**, found by the price lookup key `bench_listing_monthly` (never a hard-coded price id). No trials or coupons; `allow_promotion_codes` is off.
+- "Submit and go live" (owners only) runs `submit_listing()` (needs 3+ retailers, states, about and a contact), then opens Stripe Checkout **at the top level** (`window.top`), never inside the iframe.
+- `/api/stripe/webhook` verifies the signature, is idempotent (`stripe_events`), and handles `checkout.session.completed`, `customer.subscription.created|updated|deleted`, `invoice.paid` and `invoice.payment_failed`. Each one re-reads the subscription from Stripe and calls `sync_listing_status()`, so out-of-order events converge.
+- Returning from Checkout also syncs immediately (after checking the session belongs to the org), so a listing goes live even before the webhook lands.
+- **Live** = comped, or `active`/`trialing`, or `past_due` for under 7 days. Cancel in the portal is cancel-at-period-end: Stripe keeps it `active` until the paid period ends, then `canceled` pauses the listing. Data is kept, so resubscribing restores everything.
+- `/app/billing` opens the Stripe Customer Portal (card, invoices, cancel) for owners.
+
 ## Tests
 
 ```bash
@@ -138,6 +150,13 @@ Runs 35 browser tests:
   Side-by-side `live | bench | diff` images land in `tests/visual/__output__/`.
 - `tests/e2e/embed.spec.ts` checks embedded mode, that purveycpg.com may frame the app and any other origin is refused (real CSP check in Chromium), that Google opens at the top level, the security headers, and the auth redirect.
 - `tests/e2e/a11y.spec.ts` runs axe WCAG 2.1 AA on every public page and checks keyboard operation of both menus.
+- `tests/e2e/live/` runs **against a real Supabase project and Stripe test mode** and skips unless `E2E_LIVE=1`. The broker test signs up through the real magic-link route, builds a full listing (logo, PDFs including a refused script-carrying PDF), checks accessibility on every builder step while signed in, opens Checkout, pays with Stripe's test card, delivers Stripe's real events to the webhook, and checks live → cancel at period end → cancelled → paused. It deletes everything it creates.
+
+  ```bash
+  E2E_LIVE=1 SB_URL=… ANON=… SRK=… STRIPE_SECRET_KEY=sk_test_… STRIPE_WEBHOOK_SECRET=whsec_… BENCH_URL=http://localhost:3000 npx playwright test tests/e2e/live
+  ```
+
+  (Start the app with the same `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET`.)
 
 ## Embedding in Webflow
 
@@ -149,8 +168,8 @@ Runs 35 browser tests:
 
 ## Build phases
 
-1. **Foundation** (this PR): theme, chrome, visual diff, auth, organizations, schema + RLS + policy tests, seed.
-2. Broker listing builder and Stripe billing.
+1. **Foundation**: theme, chrome, visual diff, auth, organizations, schema + RLS + policy tests, seed.
+2. **Broker listing builder and Stripe billing** (this PR).
 3. Brand search, profiles, briefs with fit ranking, saved brokers.
 4. Messaging, realtime inbox, email notifications.
 5. Admin console.

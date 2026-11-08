@@ -72,6 +72,13 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         </section>
       )}
 
+      {session.org.type === "broker" && (
+        <div className="bench-row">
+          <Link href="/app/listing" className="button w-button">Edit your listing</Link>
+          <Link href="/app/billing" className="button bench-btn-ghost w-button">Billing</Link>
+        </div>
+      )}
+
       <section className="bench-section bench-stack">
         <h2 className="bench-h-section">Your team</h2>
         <p className="bench-muted">Invite teammates so everyone works from the same {session.org.type === "broker" ? "listing and inbox" : "briefs, shortlist and inbox"}.</p>

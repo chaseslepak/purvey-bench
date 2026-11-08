@@ -207,3 +207,53 @@ html[data-embed="1"] .section_hero { height: 640px; }
 :where(.bench-section, .bench-card, .bench-notice, .bench-subnav) p { margin: 0; padding: 0; }
 :where(.bench-section, .bench-card, .bench-subnav) .button { margin-left: 0; margin-right: 0; }
 :where(.bench-section, .bench-card) .button:not(.bench-btn-block) { width: fit-content; }
+
+/* ---------- Listing builder ---------- */
+.bench-builder { display: flex; flex-direction: column; gap: var(--pv-gap); }
+.bench-builder_grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: var(--pv-gap); align-items: start; }
+.bench-builder_side { position: sticky; top: 20px; }
+@media screen and (max-width: 991px) { .bench-builder_grid { grid-template-columns: 1fr; } .bench-builder_side { position: static; } }
+.bench-stepper { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px; flex-wrap: wrap; }
+.bench-stepper button { display: inline-flex; align-items: center; gap: 8px; border: 0; background: var(--pv-cream); border-radius: 999px; padding: 8px 14px; font: 500 0.8125rem/1 var(--pv-font-body); letter-spacing: .06em; text-transform: uppercase; cursor: pointer; color: var(--pv-ink); }
+.bench-stepper button[aria-current="step"] { background: var(--pv-blue); color: var(--pv-white); }
+.bench-stepper_n { font-variant-numeric: tabular-nums; opacity: .7; }
+.bench-stepper_dot { width: 7px; height: 7px; border-radius: 50%; background: var(--pv-line); }
+.bench-stepper_dot.is-done { background: #2f6b3a; }
+.bench-stepper button[aria-current="step"] .bench-stepper_dot.is-done { background: var(--pv-white); }
+.bench-progress { height: 6px; background: var(--pv-line-soft); border-radius: 999px; overflow: hidden; margin-top: 12px; }
+.bench-progress > span { display: block; height: 100%; background: var(--pv-blue); border-radius: inherit; transition: width .3s; }
+.bench-save { font-size: 0.8125rem; color: var(--pv-muted); }
+.bench-save.is-error { color: var(--pv-danger-ink); }
+.bench-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.bench-chip { border: 1px solid var(--pv-line); background: var(--pv-white); border-radius: 999px; padding: 7px 14px; font: 400 0.875rem/1.2 var(--pv-font-body); cursor: pointer; color: var(--pv-ink); }
+.bench-chip[aria-pressed="true"] { background: var(--pv-dark); border-color: var(--pv-dark); color: var(--pv-white); }
+.bench-tilemap { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); grid-template-rows: repeat(8, auto); gap: 4px; max-width: 560px; }
+.bench-tile { aspect-ratio: 1; max-width: 100%; border: 0; border-radius: 6px; background: var(--pv-line-soft); font: 500 0.6875rem/1 var(--pv-font-body); color: var(--pv-ink); cursor: pointer; padding: 0; }
+.bench-tile[aria-pressed="true"] { background: var(--pv-blue); color: var(--pv-white); }
+.bench-tile:hover { outline: 1px solid var(--pv-blue); }
+.bench-retailer-add { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto; gap: 12px; align-items: end; }
+@media screen and (max-width: 767px) { .bench-retailer-add { grid-template-columns: 1fr; } }
+.bench-todo { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 0.875rem; }
+.bench-doclist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.bench-doclist li { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; background: var(--pv-white); border-radius: 12px; padding: 10px 14px; }
+.bench-dl { display: grid; grid-template-columns: max-content 1fr; gap: 8px 24px; margin: 0; }
+.bench-dl dt { color: var(--pv-muted); } .bench-dl dd { margin: 0; }
+
+/* ---------- Listing card ---------- */
+.bench-lcard { background: var(--pv-white); border-radius: var(--pv-radius-card); padding: 22px; display: flex; flex-direction: column; gap: 14px; border: 1px solid var(--pv-line-soft); }
+.bench-lcard_top { display: grid; grid-template-columns: 52px minmax(0, 1fr) auto; gap: 14px; align-items: center; }
+.bench-lcard_logo { width: 52px; height: 52px; border-radius: 12px; background: var(--pv-cream); display: grid; place-items: center; overflow: hidden; font-family: var(--pv-font-display); font-size: 1.5rem; }
+.bench-lcard_logo img { width: 100%; height: 100%; object-fit: contain; }
+.bench-lcard_name { font-family: var(--pv-font-display); font-weight: 400; font-size: 1.375rem; line-height: 1.2; letter-spacing: -0.02em; margin: 0; overflow-wrap: anywhere; }
+.bench-lcard_top p { margin: 2px 0 0; }
+.bench-lcard_fit { text-align: center; background: var(--pv-cta); border-radius: 12px; padding: 6px 10px; }
+.bench-lcard_fit b { display: block; font-family: var(--pv-font-display); font-weight: 400; font-size: 1.5rem; line-height: 1; }
+.bench-lcard_fit span { font-size: 0.6875rem; letter-spacing: .1em; text-transform: uppercase; }
+.bench-lcard_retailers { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 0.875rem; }
+.bench-lcard_retailers li { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--pv-line-soft); padding: 4px 0; }
+
+/* Webflow colours every <ul> white (its lists sit on dark backgrounds) and
+   shrinks them to .88rem. Inside Bench surfaces, lists inherit like text. */
+:where([class*="bench-"]) :is(ul, ol) { color: inherit; font-size: inherit; }
+/* Blue links fail contrast on the light-blue notice; use ink, keep the underline. */
+.bench-notice .bench-link, .bench-notice .bench-link-btn { color: inherit; }
