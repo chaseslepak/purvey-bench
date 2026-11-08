@@ -138,6 +138,19 @@ Rules that must hold even for server code run as **triggers**, which also fire f
 - **Away mode** (`/app/settings`): a broker's auto-reply is posted once after a brand's first message; "not taking new lines" shows a notice on the profile but keeps the listing up.
 - **Email:** database triggers queue notifications in `email_outbox` (no client access), honouring each person's instant / daily / off preference, mutes and unsubscribes. Messages trigger an immediate send; `/api/cron/emails` retries (`sweep`), sends daily digests (`daily`) and weekly broker summaries (`weekly`). Templates are React Email in Purvey's style, with plain-text versions and one-click `List-Unsubscribe` on every type except sign-in and billing. Admins are emailed for submitted listings, verification and placement requests, and reports.
 
+## Deal room
+
+Every conversation has **Messages · Progress · Toolbox · Commissions** tabs (`/app/inbox/<id>/…`). Both parties read everything; who writes what is enforced in the database. Admins have no access.
+
+- **Progress (CRM):** the broker adds accounts (retailer, stores, commissionable or not) and posts updates (stage move, what happened, next step, due date). Updates move the board and email the brand. The brand reads everything, says thanks, or replies in Messages.
+- **Toolbox:** either side uploads PDF, PowerPoint, Excel, Word, CSV or images (25 MB) into folders. Files are checked by content and private to the two organizations; links last 5 minutes. The uploader sees when the other side opened a file, and only the uploader's team can delete it.
+- **Commissions (true-up):**
+  1. The broker records the agreed terms (rate, retainer and its months, invoice due days), which the brand can see.
+  2. Each month the brand uploads the sales report (CSV). `src/lib/deal/report.ts` finds the customer, units, sales and deduction columns, totals each account, and marks the partnership's commissionable accounts. The original file is kept in the Toolbox under Reports.
+  3. The broker can change coverage and add adjustments, **never the brand's sales figures**, then issues the invoice. `commission_totals()` computes the total, and it's frozen on the invoice.
+  4. The brand questions the invoice (the broker revises it) or marks it paid with a date, method and reference. **Payment happens outside Bench.** Each step emails the other side.
+- Distributor exports were tested with synthetic UNFI- and KeHE-style layouts. Pin the reader to the real layouts when sample files are available; Excel and PDF reports should be exported to CSV for now.
+
 ## Tests
 
 ```bash
@@ -193,6 +206,6 @@ Runs 35 browser tests:
 1. **Foundation**: theme, chrome, visual diff, auth, organizations, schema + RLS + policy tests, seed.
 2. **Broker listing builder and Stripe billing**.
 3. **Brand search, profiles, briefs with fit ranking, saved brokers**.
-4. **Messaging, realtime inbox, email notifications** (this PR); the deal room follows in its own PR.
+4. **Messaging, realtime inbox, email notifications**, and the **deal room** (this PR).
 5. Admin console.
 6. Embed and launch.
