@@ -47,10 +47,10 @@ export async function GET(req: NextRequest) {
     cols = ["type", "id", "status", "requester", "broker", "requested_by", "note", "created_at", "updated_at"];
   } else if (kind === "audit") {
     const action = (req.nextUrl.searchParams.get("action") ?? "").slice(0, 60).replace(/[%_]/g, "");
-    let q = db.from("audit_log").select("id, action, target_type, target_id, details, created_at, users:actor_user_id(email)").order("id", { ascending: false }).limit(50000);
+    let q = db.from("audit_log").select("id, action, target_type, target_id, details, created_at, actor_email").order("id", { ascending: false }).limit(50000);
     if (action) q = q.ilike("action", `${action}%`);
     const { data } = await q;
-    rows = (data ?? []).map((e) => ({ id: e.id, created_at: e.created_at, actor: one<Row>(e.users)?.email ?? "system", action: e.action, target_type: e.target_type, target_id: e.target_id, details: e.details }));
+    rows = (data ?? []).map((e) => ({ id: e.id, created_at: e.created_at, actor: e.actor_email ?? "system", action: e.action, target_type: e.target_type, target_id: e.target_id, details: e.details }));
     cols = ["id", "created_at", "actor", "action", "target_type", "target_id", "details"];
   } else {
     return NextResponse.json({ error: "unknown export" }, { status: 400 });

@@ -13,7 +13,6 @@ test.describe("admin console (live)", () => {
   test.afterAll(async () => {
     const db = admin();
     if (listIds.length) await db.from("categories").delete().in("id", listIds);
-    await db.from("audit_log").delete().in("actor_user_id", m.userIds);
     await cleanup(m);
   });
 

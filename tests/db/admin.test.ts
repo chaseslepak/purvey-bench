@@ -75,4 +75,15 @@ describe("admin console support", () => {
       expect(r).toEqual({ status: "confirmed", admin_notes: "Spoke with Jen, glowing" });
     });
   });
+
+  it("an admin who wrote audit entries can still be deleted; the entry keeps who it was", async () => {
+    await as(user(U.pat), async (q) => {
+      await q("select public.admin_log('x.test', 'y', 'z')");
+      await q("set local role postgres");
+      const [e] = await q<{ actor_email: string }>("select actor_email from audit_log where action = 'x.test'");
+      expect(e.actor_email).toMatch(/@/);
+      await q("delete from public.users where id = $1", [U.pat]);
+      expect(await q("select * from audit_log where action = 'x.test' and actor_user_id = $1", [U.pat])).toHaveLength(1);
+    });
+  });
 });
