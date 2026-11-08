@@ -83,7 +83,7 @@ test.describe("broker listing and billing (live)", () => {
     for (const s of ["Company", "Coverage", "Retailers", "Categories", "Terms", "Proof"]) {
       await step(s);
       const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).exclude(".section_joinus").analyze();
-      expect(r.violations.map((v) => v.id), `axe on ${s}`).toEqual([]);
+      expect(r.violations.map((v) => `${v.id}: ${v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(" | ")}`), `axe on ${s}`).toEqual([]);
     }
 
     // Submit -> Stripe Checkout at the top level (captured, not followed).
@@ -120,7 +120,7 @@ test.describe("broker listing and billing (live)", () => {
     await page.goto("/app/analytics");
     await expect(page.getByRole("heading", { name: "Analytics" })).toBeVisible();
     const axeA = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).exclude(".section_joinus").analyze();
-    expect(axeA.violations.map((v) => v.id), "axe on analytics").toEqual([]);
+    expect(axeA.violations.map((v) => `${v.id}: ${v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(" | ")}`), "axe on analytics").toEqual([]);
 
     // Idempotent and signature-checked.
     const dup = await fetch(`${baseURL}/api/stripe/webhook`, { method: "POST", headers: { "stripe-signature": created.header, "content-type": "application/json" }, body: created.payload });
@@ -135,7 +135,7 @@ test.describe("broker listing and billing (live)", () => {
     await page.goto("/app/billing");
     await expect(page.getByText("cancels at period end")).toBeVisible();
     const axe = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).exclude(".section_joinus").analyze();
-    expect(axe.violations.map((v) => v.id)).toEqual([]);
+    expect(axe.violations.map((v) => `${v.id}: ${v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(" | ")}`)).toEqual([]);
     let portalUrl = "";
     await page.route("https://billing.stripe.com/**", (r) => { portalUrl = r.request().url(); return r.abort(); });
     await page.getByRole("button", { name: /Update card/ }).click();

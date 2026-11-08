@@ -2,10 +2,11 @@
 
 import { useActionState, useState } from "react";
 import { signUp, type AuthFormState } from "@/app/auth/actions";
-import { Turnstile } from "@/components/ui/Turnstile";
+import { Turnstile, useTurnstileReady } from "@/components/ui/Turnstile";
 
 export function SignUpForm({ initialRole, turnstileSiteKey }: { initialRole?: "brand" | "broker"; turnstileSiteKey: string }) {
   const [state, action, pending] = useActionState<AuthFormState, FormData>(signUp, undefined);
+  const ts = useTurnstileReady(turnstileSiteKey);
   const [role, setRole] = useState<"brand" | "broker" | undefined>(initialRole);
   const err = (k: string) => state?.fieldErrors?.[k];
   const described = (k: string) => (err(k) ? `${k}-error` : undefined);
@@ -57,10 +58,10 @@ export function SignUpForm({ initialRole, turnstileSiteKey }: { initialRole?: "b
         {err("email") && <p id="email-error" className="bench-error">{err("email")}</p>}
       </div>
 
-      <Turnstile siteKey={turnstileSiteKey} />
+      <Turnstile siteKey={turnstileSiteKey} onToken={ts.onToken} />
       {state?.error && <p className="bench-notice is-error" role="alert">{state.error}</p>}
 
-      <button type="submit" className="button bench-btn-block w-button" disabled={pending}>
+      <button type="submit" className="button bench-btn-block w-button" disabled={pending || !ts.ready}>
         {pending ? "Sending…" : "Create my free account"}
       </button>
       <p className="bench-small bench-muted">

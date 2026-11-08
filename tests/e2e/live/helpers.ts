@@ -53,6 +53,12 @@ export async function cleanup(m: Made) {
     for (const id of m.customers) await s.customers.del(id).catch(() => {});
   }
   for (const orgId of m.orgIds) {
+    // Message attachments live under each conversation's folder.
+    const { data: convs } = await db.from("conversations").select("id").or(`brand_org_id.eq.${orgId},broker_org_id.eq.${orgId}`);
+    for (const c of convs ?? []) {
+      const { data: files } = await db.storage.from("message-files").list(c.id);
+      if (files?.length) await db.storage.from("message-files").remove(files.map((f) => `${c.id}/${f.name}`));
+    }
     const { data: logos } = await db.storage.from("logos").list(orgId);
     if (logos?.length) await db.storage.from("logos").remove(logos.map((o) => `${orgId}/${o.name}`));
     const { data: l } = await db.from("broker_listings").select("id").eq("org_id", orgId).maybeSingle();
@@ -104,7 +110,8 @@ export async function makeLiveBroker(m: Made, spec: BrokerSpec) {
     const { data } = await db.from(table).select("id, slug").in("slug", slugs);
     return slugs.map((s) => (data ?? []).find((r) => r.slug === s)!.id as number);
   };
-  const { data: u } = await db.auth.admin.createUser({ email: `bench-e2e-fixture-${Date.now()}-${Math.round(Math.random() * 1e6)}@example.com`, email_confirm: true });
+  const ownerEmail = `bench-e2e-fixture-${Date.now()}-${Math.round(Math.random() * 1e6)}@example.com`;
+  const { data: u } = await db.auth.admin.createUser({ email: ownerEmail, email_confirm: true, user_metadata: { name: "Fixture Broker" } });
   m.userIds.push(u.user!.id);
   await db.from("users").update({ role: "broker" }).eq("id", u.user!.id);
   const slug = spec.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -124,5 +131,13 @@ export async function makeLiveBroker(m: Made, spec: BrokerSpec) {
   await db.from("subscriptions").insert({ org_id: org!.id, comped: true });
   const { data: st } = await db.rpc("sync_listing_status", { p_org: org!.id });
   if (st !== "live") throw new Error(`fixture not live: ${st}`);
-  return { orgId: org!.id as string, listingId: l!.id as string, slug };
+  await db.from("users").update({ name: "Xavier Fixture" }).eq("id", u.user!.id);
+  return { orgId: org!.id as string, listingId: l!.id as string, slug, ownerEmail, ownerId: u.user!.id };
+}
+
+/** Sign an existing user in through the real magic-link route. */
+export async function signIn(page: Page, email: string, next = "/app") {
+  const { data: link, error } = await admin().auth.admin.generateLink({ type: "magiclink", email });
+  if (error || !link.properties) throw error ?? new Error("generateLink failed");
+  await page.goto(`/auth/confirm?next=${encodeURIComponent(next)}&token_hash=${link.properties.hashed_token}&type=email`);
 }

@@ -69,6 +69,10 @@ Without Supabase keys the public pages still render, and sign-in shows a "not co
 | `SUPABASE_SERVICE_ROLE_KEY` | server only | Billing sync (Stripe webhook, checkout return), cron, and upload validation. **Never** expose it to the client |
 | `STRIPE_SECRET_KEY` | server only | `sk_test_…` in preview, `sk_live_…` in production |
 | `STRIPE_WEBHOOK_SECRET` | server only | Signing secret of the Stripe webhook endpoint `https://bench.purveycpg.com/api/stripe/webhook` |
+| `RESEND_API_KEY` | server only | Resend sending-only key |
+| `EMAIL_FROM` | server only | e.g. `Purvey Bench <bench@purveycpg.com>` once purveycpg.com is verified in Resend. **Unset = test mode** |
+| `EMAIL_TEST_MODE` | server only | `1` sends every email to Resend's test inbox `delivered@resend.dev` from `onboarding@resend.dev` (previews, development) |
+| `EMAIL_LINK_SECRET` | server only | Signs one-click unsubscribe links |
 | `CRON_SECRET` | server only | Vercel Cron sends it to `/api/cron/sync-listings` (daily re-check of grace periods and period ends) |
 | `COOKIE_DOMAIN` | all | `.purveycpg.com`, so the session works inside the purveycpg.com iframe. Applied only when the request host is on that domain, so previews and localhost still work |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | all / server | Turnstile. Without the secret, verification passes in development and **fails closed in production** |
@@ -124,6 +128,16 @@ Rules that must hold even for server code run as **triggers**, which also fire f
 - Briefs (`/app/briefs`) are private to the brand's team, autosave, and show their top 10 brokers with reasons. Saved brokers (`/app/saved`) have folders, private notes and a side-by-side compare of up to three.
 - Brokers get `/app/analytics`: 30 or 90 days of search impressions, profile views, contact reveals, saves and new conversations, plus suggestions drawn from anonymous search counts (`broker_suggestions()`). Brokers never see which brands searched or viewed.
 
+## Messaging and email
+
+- **Only brands start conversations:** `start_conversation()` creates the thread and first message in one transaction under the caller's RLS. The database refuses a starter who isn't a brand member, a listing that isn't live, a block, and more than 25 new threads a day. Turnstile runs on a brand's first-ever message. A brief can be attached; the broker sees only the one-time summary.
+- **Inbox** (`/app/inbox`): All / Unread / Archived, a stage filter, and search across names and message text. Each side has its own stage, assignee, archive, mute and mark-unread, which the other side never sees. Private team notes, saved replies, report and block.
+- **Realtime:** new messages and read receipts arrive over Supabase Realtime (RLS-filtered). Typing indicators use **private** Broadcast channels (`conv:<id>`) that only the two parties can join.
+- **Attachments:** PDF, PNG, JPG or WebP up to 10 MB each, in the private `message-files` bucket under the conversation's folder; only the two organizations can read them, through 5-minute signed links. Messages are plain text with links, never HTML.
+- **Decline:** brokers decline with a reason (Not a fit, Category conflict, Not taking new lines, Other) and an optional note. The thread closes and the brand sees a polite closed state and gets an email.
+- **Away mode** (`/app/settings`): a broker's auto-reply is posted once after a brand's first message; "not taking new lines" shows a notice on the profile but keeps the listing up.
+- **Email:** database triggers queue notifications in `email_outbox` (no client access), honouring each person's instant / daily / off preference, mutes and unsubscribes. Messages trigger an immediate send; `/api/cron/emails` retries (`sweep`), sends daily digests (`daily`) and weekly broker summaries (`weekly`). Templates are React Email in Purvey's style, with plain-text versions and one-click `List-Unsubscribe` on every type except sign-in and billing. Admins are emailed for submitted listings, verification and placement requests, and reports.
+
 ## Tests
 
 ```bash
@@ -178,7 +192,7 @@ Runs 35 browser tests:
 
 1. **Foundation**: theme, chrome, visual diff, auth, organizations, schema + RLS + policy tests, seed.
 2. **Broker listing builder and Stripe billing**.
-3. **Brand search, profiles, briefs with fit ranking, saved brokers** (this PR).
-4. Messaging, realtime inbox, email notifications.
+3. **Brand search, profiles, briefs with fit ranking, saved brokers**.
+4. **Messaging, realtime inbox, email notifications** (this PR); the deal room follows in its own PR.
 5. Admin console.
 6. Embed and launch.

@@ -113,6 +113,8 @@ export default async function BrokerProfile({ params }: { params: Promise<{ slug
           </section>
         </div>
         <aside className="bench-stack bench-builder_side">
+          {viewer === "brand" && <Link className="button w-button bench-btn-block" href={`/app/inbox/new?broker=${l.slug}`}>Message {l.name}</Link>}
+          {viewer === "anon" && <Link className="button w-button bench-btn-block" href={`/sign-up?role=brand&next=${encodeURIComponent(`/app/inbox/new?broker=${l.slug}`)}`}>Message {l.name}</Link>}
           <ContactBlock listingId={l.id} name={l.name} viewer={viewer} next={`/brokers/${l.slug}`} />
           <p className="bench-small bench-muted" style={{ margin: 0 }}>Ranked by fit only. Brokers can&rsquo;t pay for position.</p>
         </aside>
