@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AuditRequest } from "./AuditRequest";
 import { Commissions, type Period, type Terms } from "./Commissions";
 import { ConversationHeader } from "@/components/inbox/ConversationHeader";
 import { loadConversation } from "@/lib/inbox/conversation";
@@ -8,9 +9,10 @@ export const metadata: Metadata = { title: "Commissions", robots: { index: false
 export default async function CommissionsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { db, c, amBrand, other, me } = await loadConversation(id);
-  const [{ data: t }, { data: ps }] = await Promise.all([
+  const [{ data: t }, { data: ps }, { data: audit }] = await Promise.all([
     db.from("deal_terms").select("*").eq("conversation_id", c.id).maybeSingle(),
     db.from("commission_periods").select("*").eq("conversation_id", c.id).order("period", { ascending: false }),
+    db.from("audit_requests").select("status, created_at").eq("conversation_id", c.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
   ]);
   // Live recalculation for every month (used while a month is being revised).
   const previews = await Promise.all((ps ?? []).map((p) => db.rpc("commission_totals", { p })));
@@ -24,6 +26,7 @@ export default async function CommissionsPage({ params }: { params: Promise<{ id
     <>
       <ConversationHeader id={c.id} title={other?.name ?? "Conversation"} href={amBrand && other ? `/brokers/${other.slug}` : null} active="commissions" />
       <Commissions id={c.id} isBrand={amBrand} otherName={other?.name ?? "the other side"} myName={me?.name ?? "Your team"} terms={terms} periods={periods} />
+      <AuditRequest id={c.id} existing={audit} />
     </>
   );
 }

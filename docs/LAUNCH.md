@@ -35,11 +35,12 @@ Hosts are relative to purveycpg.com (e.g. `send` = send.purveycpg.com).
 
 - ☐ Verify purveycpg.com in Resend → set `EMAIL_FROM=Purvey Bench <bench@purveycpg.com>` for production, and point Supabase's sign-in emails at Resend SMTP (removes the 2-emails-per-hour limit).
 - ☐ Create the Stripe webhook endpoint `https://bench.purveycpg.com/api/stripe/webhook` and set `STRIPE_WEBHOOK_SECRET` (test, then live).
+- ☐ Make Purvey's team admins: each person signs in once at bench.purveycpg.com, then `update users set is_admin = true where email = '…'` (Supabase SQL editor, or ask Claude). Admins get the **Admin** link and the daily queue digest.
 - ☐ Live mode: re-create the Bench Listing product, price and portal settings in Stripe live mode.
 
 ## 4. Decisions and content (Chase)
 
-- ☐ Merge the PRs in order (#1 → #4 …). Production deploys from `main`.
+- ☐ Merge the PRs in order (#1 → #6). Production deploys from `main`.
 - ☐ Terms of Service and Privacy Policy from counsel (`/terms`, `/privacy` are placeholders).
 - ☐ A sample UNFI and a sample KeHE sales report (for the commission true-up).
 - ☐ The open questions on PR #1 (CTA band contrast; brokers seeing their own references).
@@ -47,6 +48,6 @@ Hosts are relative to purveycpg.com (e.g. `send` = send.purveycpg.com).
 ## Done
 
 - ✅ Supabase: all migrations, reference lists, sign-in settings and email templates, storage buckets and policies, realtime policies.
-- ✅ Stripe test mode: Bench Listing 00/month (lookup key `bench_listing_monthly`), Customer Portal settings.
+- ✅ Stripe test mode: Bench Listing $100/month (lookup key `bench_listing_monthly`), Customer Portal settings.
 - ✅ Vercel: framework, Node 22, Supabase keys, cookie domain, cron secret, Resend sending-only key, unsubscribe secret, test-mode email for previews.
 - ✅ Resend: purveycpg.com added (waiting for DNS).

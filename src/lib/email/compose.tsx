@@ -69,7 +69,7 @@ export async function composeEmail(kind: Kind, payload: P, ctx: { appUrl: string
       break;
     case "digest":
     case "admin_digest": {
-      const items = ctx.items ?? [];
+      const items = ctx.items ?? (Array.isArray(payload.items) ? (payload.items as Record<string, unknown>[]) : []);
       subject = kind === "digest" ? `${items.length} new message${items.length === 1 ? "" : "s"} on Purvey Bench` : `Purvey Bench admin digest: ${items.length} item${items.length === 1 ? "" : "s"}`;
       heading = kind === "digest" ? "Your daily summary" : "Admin digest";
       paragraphs = items.slice(0, 20).map((i) => `${s(i.from_org ?? i.broker ?? i.brand ?? "")}: ${s(i.excerpt ?? i.note ?? i.reason ?? "")}`.trim());
@@ -106,6 +106,10 @@ export async function composeEmail(kind: Kind, payload: P, ctx: { appUrl: string
       paragraphs = [`${s(payload.from_org)} recorded payment for ${s(payload.period)}. Check your bank for the deposit.`];
       cta = { label: "Open commissions", href: `${thread(payload.conversation_id)}/commissions` };
       break;
+    case "admin_warning":
+      subject = "A message from Purvey about your Bench account"; heading = "About your account";
+      paragraphs = [s(payload.message), "Reply to this email if you have questions. Repeated reports can lead to your account being paused."];
+      break;
     case "weekly_summary":
       subject = "Your week on Purvey Bench"; heading = "Your week";
       paragraphs = [`Shown in search ${s(payload.impressions)} times · ${s(payload.views)} profile views · ${s(payload.reveals)} contact reveals · ${s(payload.conversations)} new conversations.`];
@@ -118,6 +122,7 @@ export async function composeEmail(kind: Kind, payload: P, ctx: { appUrl: string
         admin_verification_requested: `Verification requested: ${s(payload.broker)}`,
         admin_placement_requested: `Placement requested: ${s(payload.brand)} → ${s(payload.broker)}`,
         admin_report_filed: "A report was filed",
+        admin_audit_requested: `Commission audit requested: ${s(payload.brand)} / ${s(payload.broker)}`,
       };
       subject = what[kind] ?? "Purvey Bench notification";
       heading = subject;
