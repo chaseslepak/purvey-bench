@@ -24,7 +24,7 @@ export function InviteForm() {
       {state?.error && <p className="bench-notice is-error" role="alert">{state.error}</p>}
       {state?.ok && (
         <div className="bench-notice" role="status">
-          Invite created. Send this link to your teammate (it expires in 14 days):
+          {state.sent ? "Invite emailed. If it doesn't arrive, send them this link (it expires in 14 days):" : "Invite created. Send this link to your teammate (it expires in 14 days):"}
           <input readOnly className="bench-input" style={{ marginTop: 8 }} value={state.ok} aria-label="Invite link" onFocus={(e) => e.currentTarget.select()} />
         </div>
       )}

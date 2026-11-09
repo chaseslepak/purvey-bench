@@ -34,6 +34,7 @@ export async function BenchNav() {
           <>
             {session.isAdmin && <Link href="/admin" className="bench-subnav_link">Admin</Link>}
             <Link href="/app/inbox" className="bench-subnav_link">Inbox</Link>
+            {session.org && <Link href="/app/team" className="bench-subnav_link">Team</Link>}
             <Link href="/app" className="bench-subnav_link">Dashboard</Link>
             <Link href="/app/settings" className="bench-subnav_link">Settings</Link>
             <form action="/auth/sign-out" method="post">

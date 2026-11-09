@@ -28,7 +28,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
     db.from("conversation_sides").select("brand_stage, broker_stage, archived, muted, assignee_user_id").eq("conversation_id", id).eq("org_id", session.org.id).single(),
     db.from("conversation_notes").select("id, body, created_at, author_user_id").eq("conversation_id", id).order("created_at"),
     db.from("message_templates").select("id, title, body").order("title"),
-    db.from("org_members").select("user_id, users(name, email)").eq("org_id", session.org.id),
+    db.from("org_members").select("user_id, users!org_members_user_id_fkey(name, email)").eq("org_id", session.org.id),
   ]);
   const teammates = (members.data ?? []).map((m) => {
     const u = m.users as unknown as { name: string | null; email: string } | null;

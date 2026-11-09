@@ -55,6 +55,7 @@ test.describe("admin console (live)", () => {
     // Listings: comp is already on (fixture); pause with a reason, then unpause.
     await a.goto(`/admin/listings?q=${encodeURIComponent(`E2E Admin Broker ${stamp}`)}`);
     await a.getByRole("link", { name: `E2E Admin Broker ${stamp}` }).click();
+    await expect(a.getByText(new RegExp(B.ownerEmail.replace(/[.+]/g, "\\$&")))).toBeVisible(); // team list
     await a.fill("#pr", "E2E pause");
     await a.getByRole("button", { name: "Pause listing" }).click();
     await expect(a.getByText("Listing paused.")).toBeVisible();

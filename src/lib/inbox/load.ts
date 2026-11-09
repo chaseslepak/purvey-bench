@@ -11,7 +11,7 @@ export type ThreadSummary = {
 };
 
 /** The caller's threads with their own side's state. RLS limits rows to their org's threads. */
-export async function loadThreads(myOrgId: string, opts: { tab: "all" | "unread" | "archived"; stage?: string; q?: string }): Promise<ThreadSummary[]> {
+export async function loadThreads(myOrgId: string, opts: { tab: "all" | "unread" | "archived"; stage?: string; q?: string; assignee?: string }): Promise<ThreadSummary[]> {
   const db = await createClient();
   const { data: convs } = await db
     .from("conversations")
@@ -65,5 +65,6 @@ export async function loadThreads(myOrgId: string, opts: { tab: "all" | "unread"
     .filter((t) => (opts.tab === "archived" ? t.archived : !t.archived))
     .filter((t) => (opts.tab === "unread" ? t.unread : true))
     .filter((t) => (opts.stage ? t.stage === opts.stage : true))
+    .filter((t) => (opts.assignee ? (opts.assignee === "none" ? !t.assignee : t.assignee === opts.assignee) : true))
     .filter((t) => (q ? matchIds!.has(t.id) || t.otherName.toLowerCase().includes(q.toLowerCase()) : true));
 }

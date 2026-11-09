@@ -323,3 +323,12 @@ html[data-embed="1"] .bench-msgs { max-height: 560px; }
 .bench-next { margin-top: 8px; font-size: 0.8125rem; background: var(--pv-cream); border-radius: 10px; padding: 8px 12px; }
 .bench-invoice { border: 1px solid var(--pv-line); border-radius: 14px; padding: 22px; background: var(--pv-white); }
 .bench-paid { background: #e3efe3; color: #2f6b3a; border-radius: 12px; padding: 12px 14px; }
+
+/* ---------- Sign-up landing lists ---------- */
+.bench-market { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.bench-market_item { display: inline-flex; align-items: baseline; gap: 8px; border: 1px solid var(--pv-line); background: var(--pv-white); border-radius: 999px; padding: 8px 14px; font: 400 0.9375rem/1.2 var(--pv-font-body); color: var(--pv-ink); text-decoration: none; }
+a.bench-market_item:hover { border-color: var(--pv-ink); }
+.bench-market_count { font-size: 0.75rem; color: var(--pv-muted); letter-spacing: 0.04em; }
+/* Sign-up: show the list that matches the role picked in the form. */
+.bench-signup:has(input[name="role"][value="broker"]:checked) .bench-for-brands,
+.bench-signup:has(input[name="role"][value="brand"]:checked) .bench-for-brokers { display: none; }

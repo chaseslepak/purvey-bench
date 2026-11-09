@@ -21,7 +21,7 @@ export default async function AdminListing({ params, searchParams }: { params: P
     db.from("broker_references").select("id, name, brand, email, phone, status, admin_notes").eq("listing_id", l.id).order("created_at"),
     db.from("broker_contacts").select("name, title, email, phone").eq("listing_id", l.id),
     db.from("verifications").select("id, status, reason, created_at, decided_at").eq("listing_id", l.id).order("created_at", { ascending: false }),
-    db.from("org_members").select("role, users(name, email)").eq("org_id", l.org_id),
+    db.from("org_members").select("role, users!org_members_user_id_fkey(name, email)").eq("org_id", l.org_id),
   ]);
   const here = `/admin/listings/${l.id}`;
   const state = l.admin_paused ? "Paused by Purvey" : l.status === "paused" ? "Paused (billing)" : l.status[0].toUpperCase() + l.status.slice(1);

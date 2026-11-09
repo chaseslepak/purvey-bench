@@ -2,10 +2,15 @@ import Link from "next/link";
 import { Comparison } from "@/components/site/Comparison";
 import { CtaBand } from "@/components/site/CtaBand";
 import { HowItWorks } from "@/components/site/HowItWorks";
+import { MarketList } from "@/components/site/MarketList";
+import { loadCoverage } from "@/lib/market";
+
+export const revalidate = 3600;
 
 const HERO_IMG = "https://cdn.prod.website-files.com/69bdcd2f869a6d3500f34c17/6a565ac46229979185792b63_ChatGPT%20Image%20Jul%2014%2C%202026%2C%2011_41_01%20AM";
 
-export default function Home() {
+export default async function Home() {
+  const coverage = await loadCoverage(30);
   return (
     <>
       <section className="section_hero bench-hero">
@@ -48,6 +53,12 @@ export default function Home() {
         </div>
       </section>
       <HowItWorks />
+      {coverage.length > 0 && (
+        <section className="bench-section bench-stack">
+          <MarketList items={coverage} audience="brands" heading="Accounts our brokers call on"
+            lede="Retailers and distributors that brokers listed on Bench work with today. Pick one to see who covers it." />
+        </section>
+      )}
       <Comparison />
       <CtaBand />
     </>

@@ -9,7 +9,7 @@ export default async function AdminBrands({ searchParams }: { searchParams: Flas
   const sp = await searchParams;
   const { db } = await requireAdmin();
   const q = (sp.q ?? "").trim().slice(0, 80).replace(/[%_]/g, "");
-  let query = db.from("organizations").select("id, name, website, created_at, suspended_at, org_members(role, users(name, email))").eq("type", "brand").order("created_at", { ascending: false }).limit(500);
+  let query = db.from("organizations").select("id, name, website, created_at, suspended_at, org_members(role, users!org_members_user_id_fkey(name, email))").eq("type", "brand").order("created_at", { ascending: false }).limit(500);
   if (q) query = query.ilike("name", `%${q}%`);
   const [{ data: brands }, { data: placements }] = await Promise.all([query, db.from("placement_requests").select("brand_org_id")]);
   const placementCount = new Map<string, number>();

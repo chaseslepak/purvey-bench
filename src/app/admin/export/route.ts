@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     });
     cols = ["listing_id", "name", "slug", "status", "verified_at", "completeness", "hq", "website", "subscription", "period_end", "stripe_customer", "joined", "submitted_at", "live_since", "suspended_at"];
   } else if (kind === "brands") {
-    const { data } = await db.from("organizations").select("id, name, website, created_at, suspended_at, org_members(role, users(name, email))").eq("type", "brand").order("created_at", { ascending: false });
+    const { data } = await db.from("organizations").select("id, name, website, created_at, suspended_at, org_members(role, users!org_members_user_id_fkey(name, email))").eq("type", "brand").order("created_at", { ascending: false });
     rows = (data ?? []).map((b) => {
       const members = (b.org_members ?? []) as unknown as { role: string; users: { name: string | null; email: string } | null }[];
       const owner = members.find((m) => m.role === "owner")?.users;
