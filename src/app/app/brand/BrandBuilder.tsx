@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { deleteBrandFile, deleteProduct, openBrandFile, registerBrandFile, saveBrandProfile, saveCompany, saveProduct } from "./actions";
-import { Chips, RefPicker, type Ref } from "@/components/pickers";
+import { Chips, OtherNames, RefPicker, type Ref } from "@/components/pickers";
 import { UsTileMap } from "@/components/listing/UsTileMap";
 import {
   brandChecklist, CERTIFICATIONS, COMMISSION, completeness, DATA_ROOM_FOLDERS, REVENUE, STAGE, STORAGE, TIMELINE, TRADE,
@@ -114,7 +114,8 @@ export function BrandBuilder({ orgId, isOwner, company: c0, profile: p0, product
           <section className="bench-section bench-stack" aria-label="Where you sell today">
             <p className="bench-small bench-muted" style={{ margin: 0 }}>Brokers want to know your current footprint. Skip anything that doesn&rsquo;t apply.</p>
             <div className="bench-field"><span className="bench-label">Retailers you&rsquo;re in now</span><RefPicker label="Current retailers" placeholder="Add a retailer, e.g. Whole Foods" options={refs.retailers} selected={p.current_retailers} onChange={(v) => set({ current_retailers: v })} /></div>
-            <div className="bench-field"><span className="bench-label">Distributors you work with</span><Chips label="Current distributors" options={refs.distributors} selected={p.current_distributors} onChange={(v) => set({ current_distributors: v })} /></div>
+            <div className="bench-field"><span className="bench-label">Distributors you work with</span><Chips label="Current distributors" options={refs.distributors} selected={p.current_distributors} onChange={(v) => set({ current_distributors: v })} />
+              <OtherNames label="Other current distributors" placeholder="Not listed? Type a distributor and press Add" values={p.other_current_distributors} onChange={(v) => set({ other_current_distributors: v })} /></div>
             <div className="bench-field"><span className="bench-label">Channels you sell in</span><Chips label="Current channels" options={refs.channels} selected={p.current_channels} onChange={(v) => set({ current_channels: v })} /></div>
             <div className="bench-field" style={{ maxWidth: 260 }}><label className="bench-label" htmlFor="bp-doors">Number of stores (doors)</label><input id="bp-doors" className="bench-input" inputMode="numeric" value={p.current_doors ?? ""} onChange={(e) => set({ current_doors: /^\d+$/.test(e.target.value) ? Number(e.target.value) : null })} /></div>
             <span className="bench-label">States you&rsquo;re sold in</span>
@@ -126,7 +127,8 @@ export function BrandBuilder({ orgId, isOwner, company: c0, profile: p0, product
           <section className="bench-section bench-stack" aria-label="Where you want to be">
             <p className="bench-small bench-muted" style={{ margin: 0 }}>This is what brokers are matched on. It ranks search results when you haven&rsquo;t picked a brief.</p>
             <div className="bench-field"><span className="bench-label">Retailers you want to be in</span><RefPicker label="Target retailers" placeholder="Add a retailer, e.g. Kroger" options={refs.retailers} selected={p.target_retailers} onChange={(v) => set({ target_retailers: v })} /></div>
-            <div className="bench-field"><span className="bench-label">Distributors you want</span><Chips label="Target distributors" options={refs.distributors} selected={p.target_distributors} onChange={(v) => set({ target_distributors: v })} /></div>
+            <div className="bench-field"><span className="bench-label">Distributors you want</span><Chips label="Target distributors" options={refs.distributors} selected={p.target_distributors} onChange={(v) => set({ target_distributors: v })} />
+              <OtherNames label="Other target distributors" placeholder="Not listed? Type a distributor and press Add" values={p.other_target_distributors} onChange={(v) => set({ other_target_distributors: v })} /></div>
             <div className="bench-field"><span className="bench-label">Channels you want</span><Chips label="Target channels" options={refs.channels} selected={p.target_channels} onChange={(v) => set({ target_channels: v })} /></div>
             <div className="bench-field"><span className="bench-label">Regions</span><Chips label="Target regions" options={refs.regions.map((r) => ({ id: r.code, name: r.name }))} selected={p.target_regions} onChange={(v) => set({ target_regions: v })} /></div>
             <span className="bench-label">Or specific states</span>

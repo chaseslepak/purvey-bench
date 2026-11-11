@@ -48,3 +48,31 @@ export function RefPicker({ options, selected, onChange, label, placeholder }: {
     </div>
   );
 }
+
+/** Free-text names for anything not on our lists (e.g. a regional distributor). */
+export function OtherNames({ values, onChange, label, placeholder }: { values: string[]; onChange: (v: string[]) => void; label: string; placeholder: string }) {
+  const [q, setQ] = useState("");
+  const id = useId();
+  const add = () => {
+    const v = q.trim().replace(/[<>]/g, "").slice(0, 80);
+    if (v && !values.some((x) => x.toLowerCase() === v.toLowerCase()) && values.length < 20) onChange([...values, v]);
+    setQ("");
+  };
+  return (
+    <div className="bench-stack" style={{ gap: 10 }}>
+      <div className="bench-retailer-add" style={{ gridTemplateColumns: "minmax(0, 1fr) auto" }}>
+        <div className="bench-field">
+          <label htmlFor={id} className="bench-sr-only">{label}</label>
+          <input id={id} className="bench-input" value={q} maxLength={80} placeholder={placeholder}
+            onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }} />
+        </div>
+        <button type="button" className="button bench-btn-ghost w-button" onClick={add}>Add</button>
+      </div>
+      {values.length > 0 && (
+        <div className="bench-chips" aria-label={`${label}: added`}>
+          {values.map((v) => <button key={v} type="button" className="bench-chip" aria-pressed="true" aria-label={`Remove ${v}`} onClick={() => onChange(values.filter((x) => x !== v))}>{v} ×</button>)}
+        </div>
+      )}
+    </div>
+  );
+}

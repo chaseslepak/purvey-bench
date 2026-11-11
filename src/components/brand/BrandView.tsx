@@ -33,7 +33,7 @@ export function BrandView({ b, refs }: { b: BrandData; refs: Reference }) {
           <h2 id="bv-goal" className="bench-eyebrow" style={{ margin: 0 }}>Where they want to be</h2>
           <dl className="bench-dl">
             {row("Retailers", nameOf(refs.retailers, p.target_retailers))}
-            {row("Distributors", nameOf(refs.distributors, p.target_distributors))}
+            {row("Distributors", [...nameOf(refs.distributors, p.target_distributors), ...p.other_target_distributors])}
             {row("Channels", nameOf(refs.channels, p.target_channels))}
             {row("Regions", regionNames)}
             {row("States", stateNames(p.target_states))}
@@ -47,12 +47,12 @@ export function BrandView({ b, refs }: { b: BrandData; refs: Reference }) {
           <h2 id="bv-now" className="bench-eyebrow" style={{ margin: 0 }}>Where they sell today</h2>
           <dl className="bench-dl">
             {row("Retailers", nameOf(refs.retailers, p.current_retailers))}
-            {row("Distributors", nameOf(refs.distributors, p.current_distributors))}
+            {row("Distributors", [...nameOf(refs.distributors, p.current_distributors), ...p.other_current_distributors])}
             {row("Channels", nameOf(refs.channels, p.current_channels))}
             {row("States", stateNames(p.current_states))}
             {p.current_doors != null && (<><dt>Stores</dt><dd>{p.current_doors.toLocaleString("en-US")}</dd></>)}
           </dl>
-          {!p.current_retailers.length && !p.current_distributors.length && !p.current_states.length && <p className="bench-muted" style={{ margin: 0 }}>Not shared yet.</p>}
+          {!p.current_retailers.length && !p.current_distributors.length && !p.other_current_distributors.length && !p.current_states.length && <p className="bench-muted" style={{ margin: 0 }}>Not shared yet.</p>}
         </section>
       </div>
 

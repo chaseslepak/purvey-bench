@@ -52,4 +52,15 @@ describe("brand profile v2", () => {
       expect(rows).toEqual([{ name: "Meijer", brands: "3" }]);
     });
   });
+
+  it("brands can name distributors that aren't on the list; new channels exist", async () => {
+    await as(user(U.alice), async (q) => {
+      await q("update brand_profiles set other_target_distributors = array['Lancaster Distribution','Rocky Mountain Natural'], other_current_distributors = array['Local DSD'] where org_id = $1", [f.brandA]);
+      const [p] = await q<{ other_target_distributors: string[] }>("select other_target_distributors from brand_profiles where org_id = $1", [f.brandA]);
+      expect(p.other_target_distributors).toEqual(["Lancaster Distribution", "Rocky Mountain Natural"]);
+      await expect(q("update brand_profiles set other_target_distributors = array[''] where org_id = $1", [f.brandA])).rejects.toThrow(/1 to 80/);
+      const ch = await q<{ name: string }>("select name from channels where slug in ('hardware','qvc-tv-shopping','industrial-safety','office-pantry') order by name");
+      expect(ch.map((c) => c.name)).toEqual(["Hardware", "Industrial & Safety", "Office & Pantry", "QVC & TV Shopping"]);
+    });
+  });
 });

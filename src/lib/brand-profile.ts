@@ -19,15 +19,15 @@ export const label = (list: readonly (readonly [string, string])[], key: string 
 export type BrandProfile = {
   about: string | null; founded_year: number | null; annual_revenue_band: string | null; stage: string | null;
   categories: number[]; certifications: string[]; storage: string | null;
-  current_retailers: number[]; current_distributors: number[]; current_states: string[]; current_channels: number[]; current_doors: number | null;
-  target_retailers: number[]; target_distributors: number[]; target_regions: string[]; target_states: string[]; target_channels: number[];
+  current_retailers: number[]; current_distributors: number[]; other_current_distributors: string[]; current_states: string[]; current_channels: number[]; current_doors: number | null;
+  target_retailers: number[]; target_distributors: number[]; other_target_distributors: string[]; target_regions: string[]; target_states: string[]; target_channels: number[];
   timeline: string | null; commission_pref: string | null; max_rate: number | null; max_retainer: number | null; trade_budget_band: string | null; looking_for: string | null;
 };
 
 export const EMPTY_PROFILE: BrandProfile = {
   about: null, founded_year: null, annual_revenue_band: null, stage: null, categories: [], certifications: [], storage: null,
-  current_retailers: [], current_distributors: [], current_states: [], current_channels: [], current_doors: null,
-  target_retailers: [], target_distributors: [], target_regions: [], target_states: [], target_channels: [],
+  current_retailers: [], current_distributors: [], other_current_distributors: [], current_states: [], current_channels: [], current_doors: null,
+  target_retailers: [], target_distributors: [], other_target_distributors: [], target_regions: [], target_states: [], target_channels: [],
   timeline: null, commission_pref: null, max_rate: null, max_retainer: null, trade_budget_band: null, looking_for: null,
 };
 
@@ -42,7 +42,7 @@ export function brandChecklist(p: BrandProfile, counts: { products: number; file
     { key: "website", label: "Add your website", step: "company", done: counts.website },
     { key: "stage", label: "Add your stage and revenue band", step: "company", done: !!p.stage && !!p.annual_revenue_band },
     { key: "products", label: "Add at least one product", step: "products", done: counts.products > 0 },
-    { key: "today", label: "Say where you sell today (retailers, distributors or states)", step: "today", done: p.current_retailers.length + p.current_distributors.length + p.current_states.length > 0 },
+    { key: "today", label: "Say where you sell today (retailers, distributors or states)", step: "today", done: p.current_retailers.length + p.current_distributors.length + p.other_current_distributors.length + p.current_states.length > 0 },
     { key: "target_retailers", label: "Pick the retailers you want to be in", step: "goals", done: p.target_retailers.length > 0 },
     { key: "target_area", label: "Pick the regions or states you're targeting", step: "goals", done: p.target_regions.length + p.target_states.length > 0 },
     { key: "terms", label: "Share your timeline and what you'll pay a broker", step: "goals", done: !!p.timeline && !!p.commission_pref },

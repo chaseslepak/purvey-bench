@@ -12,6 +12,7 @@ type R = { ok?: boolean; error?: string };
 const uuid = z.uuid();
 const ids = z.array(z.number().int().positive()).max(200);
 const codes = (re: RegExp) => z.array(z.string().regex(re)).max(60);
+const names = z.array(z.string().trim().min(1).max(80).regex(/^[^<>]+$/)).max(20);
 const txt = (n: number) => z.string().trim().max(n).transform((v) => v || null).nullable();
 const opt = <T extends readonly [string, ...string[]]>(vals: T) => z.enum(vals).nullable();
 
@@ -28,9 +29,9 @@ const profileSchema = z.object({
   stage: opt(["launching", "regional", "national", "established"]),
   categories: ids, certifications: z.array(z.string().regex(/^[a-z_]{2,20}$/)).max(20),
   storage: opt(["ambient", "refrigerated", "frozen"]),
-  current_retailers: ids, current_distributors: ids, current_states: codes(/^[A-Z]{2}$/), current_channels: ids,
+  current_retailers: ids, current_distributors: ids, other_current_distributors: names, current_states: codes(/^[A-Z]{2}$/), current_channels: ids,
   current_doors: z.number().int().min(0).max(1_000_000).nullable(),
-  target_retailers: ids, target_distributors: ids, target_regions: codes(/^[a-z]{2,20}$/), target_states: codes(/^[A-Z]{2}$/), target_channels: ids,
+  target_retailers: ids, target_distributors: ids, other_target_distributors: names, target_regions: codes(/^[a-z]{2,20}$/), target_states: codes(/^[A-Z]{2}$/), target_channels: ids,
   timeline: opt(["now", "3_months", "6_months", "exploring"]),
   commission_pref: opt(["pct_net_sales", "retainer_plus_pct", "retainer_only"]),
   max_rate: z.number().min(0).max(100).nullable(), max_retainer: z.number().min(0).max(1_000_000).nullable(),
