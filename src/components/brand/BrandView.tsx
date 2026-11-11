@@ -19,7 +19,7 @@ export function BrandView({ b, refs }: { b: BrandData; refs: Reference }) {
     <div className="bench-stack">
       <section className="bench-section is-cream bench-stack" style={{ gap: 10 }}>
         <div className="bench-row" style={{ gap: 8 }}>
-          {nameOf(refs.categories, p.categories).map((c) => <span key={c} className="bench-tag is-mist">{c}</span>)}
+          {[...nameOf(refs.categories, p.categories), ...p.other_categories].map((c) => <span key={c} className="bench-tag is-mist">{c}</span>)}
           {p.certifications.map((c) => <span key={c} className="bench-tag">{label(CERTIFICATIONS, c)}</span>)}
           {p.storage && <span className="bench-tag">{label(STORAGE, p.storage)}</span>}
         </div>
@@ -32,9 +32,9 @@ export function BrandView({ b, refs }: { b: BrandData; refs: Reference }) {
         <section className="bench-card bench-stack" aria-labelledby="bv-goal">
           <h2 id="bv-goal" className="bench-eyebrow" style={{ margin: 0 }}>Where they want to be</h2>
           <dl className="bench-dl">
-            {row("Retailers", nameOf(refs.retailers, p.target_retailers))}
+            {row("Retailers", [...nameOf(refs.retailers, p.target_retailers), ...p.other_target_retailers])}
             {row("Distributors", [...nameOf(refs.distributors, p.target_distributors), ...p.other_target_distributors])}
-            {row("Channels", nameOf(refs.channels, p.target_channels))}
+            {row("Channels", [...nameOf(refs.channels, p.target_channels), ...p.other_target_channels])}
             {row("Regions", regionNames)}
             {row("States", stateNames(p.target_states))}
             {p.timeline && (<><dt>Timeline</dt><dd>{label(TIMELINE, p.timeline)}</dd></>)}
@@ -46,13 +46,13 @@ export function BrandView({ b, refs }: { b: BrandData; refs: Reference }) {
         <section className="bench-card bench-stack" aria-labelledby="bv-now">
           <h2 id="bv-now" className="bench-eyebrow" style={{ margin: 0 }}>Where they sell today</h2>
           <dl className="bench-dl">
-            {row("Retailers", nameOf(refs.retailers, p.current_retailers))}
+            {row("Retailers", [...nameOf(refs.retailers, p.current_retailers), ...p.other_current_retailers])}
             {row("Distributors", [...nameOf(refs.distributors, p.current_distributors), ...p.other_current_distributors])}
-            {row("Channels", nameOf(refs.channels, p.current_channels))}
+            {row("Channels", [...nameOf(refs.channels, p.current_channels), ...p.other_current_channels])}
             {row("States", stateNames(p.current_states))}
             {p.current_doors != null && (<><dt>Stores</dt><dd>{p.current_doors.toLocaleString("en-US")}</dd></>)}
           </dl>
-          {!p.current_retailers.length && !p.current_distributors.length && !p.other_current_distributors.length && !p.current_states.length && <p className="bench-muted" style={{ margin: 0 }}>Not shared yet.</p>}
+          {!p.current_retailers.length && !p.other_current_retailers.length && !p.other_current_channels.length && !p.current_channels.length && !p.current_distributors.length && !p.other_current_distributors.length && !p.current_states.length && <p className="bench-muted" style={{ margin: 0 }}>Not shared yet.</p>}
         </section>
       </div>
 

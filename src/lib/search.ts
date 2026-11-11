@@ -40,6 +40,8 @@ export type ListingRow = {
   distributors: number[];
   categories: number[];
   conflicts: number[];
+  /** Names the broker typed that aren't on the reference lists (display only). */
+  other?: { channels: string[]; distributors: string[]; categories: string[]; conflicts: string[] };
   verified: boolean;
   notTakingNewLines: boolean;
   updatedAt: string;

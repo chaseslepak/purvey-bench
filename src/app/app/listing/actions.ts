@@ -27,6 +27,7 @@ const optUrl = z
   .pipe(z.union([z.literal(""), z.url("Enter a valid website.")]))
   .transform((v) => v || null);
 const ids = z.array(z.number().int().positive()).max(200);
+const names = z.array(z.string().trim().min(1).max(80).regex(/^[^<>]+$/)).max(20).default([]);
 
 const steps = {
   company: z.object({
@@ -44,6 +45,8 @@ const steps = {
     states: z.array(z.string().regex(/^[A-Z]{2}$/)).max(51),
     channels: ids,
     distributors: ids,
+    otherChannels: names,
+    otherDistributors: names,
   }),
   retailers: z.object({
     rows: z
@@ -55,7 +58,7 @@ const steps = {
       )
       .max(300),
   }),
-  categories: z.object({ categories: ids, conflicts: ids, currentLines: z.string().trim().max(2000).transform((v) => v || null) }),
+  categories: z.object({ categories: ids, conflicts: ids, otherCategories: names, otherConflicts: names, currentLines: z.string().trim().max(2000).transform((v) => v || null) }),
   terms: z
     .object({
       model: z.union([z.literal(""), z.enum(["pct_net_sales", "retainer_plus_pct", "retainer_only"])]).transform((v) => v || null),
@@ -71,7 +74,7 @@ const steps = {
     merchandisers: optInt(0, 100000),
     references: z
       .array(z.object({ name: optText(120), brand: optText(120), email: optEmail, phone: optText(40) }))
-      .max(2),
+      .max(5),
   }),
 } as const;
 
@@ -119,7 +122,7 @@ export async function saveStep(step: StepName, payload: unknown): Promise<SaveRe
       const c = parsed.data as z.infer<typeof steps.coverage>;
       const e1 = (await db.rpc("save_listing_states", { p_listing: listing.id, p_states: c.states })).error;
       if (e1) return fail(e1)!;
-      const e2 = (await db.from("broker_listings").update({ channels: c.channels, distributors: c.distributors }).eq("id", listing.id)).error;
+      const e2 = (await db.from("broker_listings").update({ channels: c.channels, distributors: c.distributors, other_channels: c.otherChannels, other_distributors: c.otherDistributors }).eq("id", listing.id)).error;
       if (e2) return fail(e2)!;
       break;
     }
@@ -132,7 +135,7 @@ export async function saveStep(step: StepName, payload: unknown): Promise<SaveRe
     }
     case "categories": {
       const c = parsed.data as z.infer<typeof steps.categories>;
-      const e = (await db.from("broker_listings").update({ categories: c.categories, conflicts: c.conflicts, current_lines: c.currentLines }).eq("id", listing.id)).error;
+      const e = (await db.from("broker_listings").update({ categories: c.categories, conflicts: c.conflicts, other_categories: c.otherCategories, other_conflicts: c.otherConflicts, current_lines: c.currentLines }).eq("id", listing.id)).error;
       if (e) return fail(e)!;
       break;
     }

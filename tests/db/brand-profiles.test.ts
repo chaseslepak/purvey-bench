@@ -63,4 +63,17 @@ describe("brand profile v2", () => {
       expect(ch.map((c) => c.name)).toEqual(["Hardware", "Industrial & Safety", "Office & Pantry", "QVC & TV Shopping"]);
     });
   });
+  it("'add your own' names save for brands and brokers, within limits", async () => {
+    await as(user(U.amy), async (q) => {
+      await q("update brand_profiles set other_target_retailers = array['Lunds & Byerlys'], other_categories = array['Bone broth'], other_current_channels = array['Farmers markets'] where org_id = $1", [f.brandA]);
+      await expect(q("update brand_profiles set other_target_retailers = array['<script>'] where org_id = $1", [f.brandA])).rejects.toThrow(/check/);
+      await expect(q("update brand_profiles set other_categories = array[' '] where org_id = $1", [f.brandA])).rejects.toThrow(/check/);
+      await expect(q("update brand_profiles set other_target_channels = (select array_agg('c' || g) from generate_series(1, 21) g) where org_id = $1", [f.brandA])).rejects.toThrow(/check/);
+    });
+    await as(user(U.xavier), async (q) => {
+      await q("update broker_listings set other_distributors = array['Chex Finer Foods'], other_channels = array['Military'], other_categories = array['Kombucha'], other_conflicts = array['Jerky'] where org_id = $1", [f.brokerX]);
+      const [l] = await q<{ other_distributors: string[] }>("select other_distributors from broker_listings where org_id = $1", [f.brokerX]);
+      expect(l.other_distributors).toEqual(["Chex Finer Foods"]);
+    });
+  });
 });

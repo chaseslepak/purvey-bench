@@ -74,13 +74,13 @@ export default async function ListingPage({ searchParams }: { searchParams: Prom
       about: s(listing.about), logoUrl: org.data?.logo_url ?? null,
       contactName: s(contact.data?.name), contactTitle: s(contact.data?.title), contactEmail: s(contact.data?.email), contactPhone: s(contact.data?.phone),
     },
-    coverage: { states: (states.data ?? []).map((r) => r.state_code as string), channels: listing.channels, distributors: listing.distributors },
+    coverage: { states: (states.data ?? []).map((r) => r.state_code as string), channels: listing.channels, distributors: listing.distributors, otherChannels: listing.other_channels ?? [], otherDistributors: listing.other_distributors ?? [] },
     retailers: (retailers.data ?? []).map((r) => ({
       retailerId: r.retailer_id, customName: r.custom_name,
       name: r.custom_name ?? (r.retailers as unknown as { name: string } | null)?.name ?? "Retailer",
       freq: r.call_frequency as Freq,
     })),
-    categories: { categories: listing.categories, conflicts: listing.conflicts, currentLines: s(listing.current_lines) },
+    categories: { categories: listing.categories, conflicts: listing.conflicts, otherCategories: listing.other_categories ?? [], otherConflicts: listing.other_conflicts ?? [], currentLines: s(listing.current_lines) },
     terms: { model: s(listing.commission_model), rateLow: s(listing.rate_low), rateHigh: s(listing.rate_high), retainer: s(listing.retainer), minTerm: s(listing.min_term_months) },
     proof: {
       years: s(listing.years_in_business), teamSize: s(listing.team_size), merchandisers: s(listing.merchandisers),

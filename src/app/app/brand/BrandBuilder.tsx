@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { deleteBrandFile, deleteProduct, openBrandFile, registerBrandFile, saveBrandProfile, saveCompany, saveProduct } from "./actions";
-import { Chips, OtherNames, RefPicker, type Ref } from "@/components/pickers";
+import { Chips, RefPicker, type Ref } from "@/components/pickers";
 import { UsTileMap } from "@/components/listing/UsTileMap";
 import {
   brandChecklist, CERTIFICATIONS, COMMISSION, completeness, DATA_ROOM_FOLDERS, REVENUE, STAGE, STORAGE, TIMELINE, TRADE,
@@ -18,8 +18,51 @@ type Refs = { regions: { code: string; name: string }[]; states: { code: string;
 
 const STEPS: [Step, string][] = [["company", "Company"], ["products", "Products"], ["today", "Where you sell"], ["goals", "Where you want to be"], ["dataroom", "Data room"]];
 const opts = (list: readonly (readonly [string, string])[]) => list.map(([id, name]) => ({ id, name }));
-const num = (v: string) => (v.trim() === "" ? null : Number(v));
+
+/** A number input that keeps what the user types (e.g. "5." or "20") and reports a parsed value. */
+function NumberField({ id, label, value, onChange, placeholder, decimal, min = 0, max }: { id: string; label: string; value: number | null; onChange: (v: number | null) => void; placeholder?: string; decimal?: boolean; min?: number; max?: number }) {
+  const [text, setText] = useState(value == null ? "" : String(value));
+  const [err, setErr] = useState<string | null>(null);
+  const pattern = decimal ? /^\d*\.?\d*$/ : /^\d*$/;
+  return (
+    <div className="bench-field">
+      <label className="bench-label" htmlFor={id}>{label}</label>
+      <input id={id} className="bench-input" inputMode={decimal ? "decimal" : "numeric"} value={text} placeholder={placeholder}
+        aria-invalid={err ? true : undefined} aria-describedby={err ? `${id}-err` : undefined}
+        onChange={(e) => {
+          const v = e.target.value.replace(/[,$%\s]/g, "");
+          if (!pattern.test(v)) return;
+          setText(v);
+          const n = v === "" || v === "." ? null : Number(v);
+          const bad = n != null && (n < min || (max != null && n > max));
+          setErr(bad ? `Enter a number${max != null ? ` from ${min} to ${max}` : ""}.` : null);
+          if (!bad) onChange(n);
+        }} />
+      {err && <p id={`${id}-err`} className="bench-hint is-error" style={{ margin: 0 }}>{err}</p>}
+    </div>
+  );
+}
 const fmtSize = (b: number) => (b > 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1e3))} KB`);
+
+/** Founded year: free typing; saved once it's a plausible 4-digit year. */
+function FoundedField({ value, onChange }: { value: number | null; onChange: (v: number | null) => void }) {
+  const [text, setText] = useState(value == null ? "" : String(value));
+  const year = new Date().getFullYear();
+  const bad = text.length === 4 && (Number(text) < 1800 || Number(text) > year);
+  return (
+    <div className="bench-field">
+      <label className="bench-label" htmlFor="bp-year">Founded</label>
+      <input id="bp-year" className="bench-input" inputMode="numeric" maxLength={4} value={text} placeholder="2021" aria-invalid={bad || undefined} aria-describedby={bad ? "bp-year-err" : undefined}
+        onChange={(e) => {
+          const v = e.target.value.replace(/\D/g, "").slice(0, 4);
+          setText(v);
+          if (v === "") onChange(null);
+          else if (v.length === 4 && Number(v) >= 1800 && Number(v) <= year) onChange(Number(v));
+        }} />
+      {bad && <p id="bp-year-err" className="bench-hint is-error" style={{ margin: 0 }}>Enter a year from 1800 to {year}.</p>}
+    </div>
+  );
+}
 
 function Select({ id, label, value, options, onChange }: { id: string; label: string; value: string | null; options: readonly (readonly [string, string])[]; onChange: (v: string | null) => void }) {
   return (
@@ -97,11 +140,11 @@ export function BrandBuilder({ orgId, isOwner, company: c0, profile: p0, product
               {isOwner ? <div><button type="submit" className="button is-small w-button" disabled={pending}>Save company details</button></div> : <p className="bench-small bench-muted" style={{ margin: 0 }}>Only owners can change the name and website.</p>}
             </form>
             <div className="bench-field"><label className="bench-label" htmlFor="bp-about">About your brand</label><textarea id="bp-about" className="bench-input" maxLength={2000} value={p.about ?? ""} placeholder="What you make, what makes it different, and who buys it." onChange={(e) => set({ about: e.target.value })} /></div>
-            <div className="bench-field"><span className="bench-label">Categories</span><RefPicker label="Categories" placeholder="Add a category, e.g. Meat snacks" options={refs.categories} selected={p.categories} onChange={(v) => set({ categories: v })} /></div>
+            <div className="bench-field"><span className="bench-label">Categories</span><RefPicker label="Categories" placeholder="Pick or type your own, e.g. Meat snacks" options={refs.categories} selected={p.categories} onChange={(v) => set({ categories: v })} other={p.other_categories} onOther={(v) => set({ other_categories: v })} /></div>
             <div className="bench-grid-3">
               <Select id="bp-stage" label="Stage" value={p.stage} options={STAGE} onChange={(v) => set({ stage: v })} />
               <Select id="bp-rev" label="Annual revenue" value={p.annual_revenue_band} options={REVENUE} onChange={(v) => set({ annual_revenue_band: v })} />
-              <div className="bench-field"><label className="bench-label" htmlFor="bp-year">Founded</label><input id="bp-year" className="bench-input" inputMode="numeric" value={p.founded_year ?? ""} onChange={(e) => set({ founded_year: /^\d{4}$/.test(e.target.value) ? Number(e.target.value) : null })} placeholder="2021" /></div>
+              <FoundedField value={p.founded_year} onChange={(v) => set({ founded_year: v })} />
             </div>
             <div className="bench-field"><span className="bench-label">Certifications and attributes</span><Chips label="Certifications" options={opts(CERTIFICATIONS)} selected={p.certifications} onChange={(v) => set({ certifications: v })} /></div>
             <div className="bench-field"><span className="bench-label">Storage</span><Chips label="Storage" options={opts(STORAGE)} selected={p.storage ? [p.storage] : []} onChange={(v) => set({ storage: v.at(-1) ?? null })} /></div>
@@ -113,11 +156,10 @@ export function BrandBuilder({ orgId, isOwner, company: c0, profile: p0, product
         {step === "today" && (
           <section className="bench-section bench-stack" aria-label="Where you sell today">
             <p className="bench-small bench-muted" style={{ margin: 0 }}>Brokers want to know your current footprint. Skip anything that doesn&rsquo;t apply.</p>
-            <div className="bench-field"><span className="bench-label">Retailers you&rsquo;re in now</span><RefPicker label="Current retailers" placeholder="Add a retailer, e.g. Whole Foods" options={refs.retailers} selected={p.current_retailers} onChange={(v) => set({ current_retailers: v })} /></div>
-            <div className="bench-field"><span className="bench-label">Distributors you work with</span><Chips label="Current distributors" options={refs.distributors} selected={p.current_distributors} onChange={(v) => set({ current_distributors: v })} />
-              <OtherNames label="Other current distributors" placeholder="Not listed? Type a distributor and press Add" values={p.other_current_distributors} onChange={(v) => set({ other_current_distributors: v })} /></div>
-            <div className="bench-field"><span className="bench-label">Channels you sell in</span><Chips label="Current channels" options={refs.channels} selected={p.current_channels} onChange={(v) => set({ current_channels: v })} /></div>
-            <div className="bench-field" style={{ maxWidth: 260 }}><label className="bench-label" htmlFor="bp-doors">Number of stores (doors)</label><input id="bp-doors" className="bench-input" inputMode="numeric" value={p.current_doors ?? ""} onChange={(e) => set({ current_doors: /^\d+$/.test(e.target.value) ? Number(e.target.value) : null })} /></div>
+            <div className="bench-field"><span className="bench-label">Retailers you&rsquo;re in now</span><RefPicker label="Current retailers" placeholder="Pick or type your own, e.g. Whole Foods" options={refs.retailers} selected={p.current_retailers} onChange={(v) => set({ current_retailers: v })} other={p.other_current_retailers} onOther={(v) => set({ other_current_retailers: v })} /></div>
+            <div className="bench-field"><span className="bench-label">Distributors you work with</span><Chips label="Current distributors" options={refs.distributors} selected={p.current_distributors} onChange={(v) => set({ current_distributors: v })} other={p.other_current_distributors} onOther={(v) => set({ other_current_distributors: v })} /></div>
+            <div className="bench-field"><span className="bench-label">Channels you sell in</span><Chips label="Current channels" options={refs.channels} selected={p.current_channels} onChange={(v) => set({ current_channels: v })} other={p.other_current_channels} onOther={(v) => set({ other_current_channels: v })} /></div>
+            <div style={{ maxWidth: 260 }}><NumberField id="bp-doors" label="Number of stores (doors)" value={p.current_doors} max={1_000_000} onChange={(v) => set({ current_doors: v })} /></div>
             <span className="bench-label">States you&rsquo;re sold in</span>
             <UsTileMap selected={new Set(p.current_states)} names={names} onToggle={(code) => toggleState("current_states", code)} />
           </section>
@@ -126,10 +168,9 @@ export function BrandBuilder({ orgId, isOwner, company: c0, profile: p0, product
         {step === "goals" && (
           <section className="bench-section bench-stack" aria-label="Where you want to be">
             <p className="bench-small bench-muted" style={{ margin: 0 }}>This is what brokers are matched on. It ranks search results when you haven&rsquo;t picked a brief.</p>
-            <div className="bench-field"><span className="bench-label">Retailers you want to be in</span><RefPicker label="Target retailers" placeholder="Add a retailer, e.g. Kroger" options={refs.retailers} selected={p.target_retailers} onChange={(v) => set({ target_retailers: v })} /></div>
-            <div className="bench-field"><span className="bench-label">Distributors you want</span><Chips label="Target distributors" options={refs.distributors} selected={p.target_distributors} onChange={(v) => set({ target_distributors: v })} />
-              <OtherNames label="Other target distributors" placeholder="Not listed? Type a distributor and press Add" values={p.other_target_distributors} onChange={(v) => set({ other_target_distributors: v })} /></div>
-            <div className="bench-field"><span className="bench-label">Channels you want</span><Chips label="Target channels" options={refs.channels} selected={p.target_channels} onChange={(v) => set({ target_channels: v })} /></div>
+            <div className="bench-field"><span className="bench-label">Retailers you want to be in</span><RefPicker label="Target retailers" placeholder="Pick or type your own, e.g. Kroger" options={refs.retailers} selected={p.target_retailers} onChange={(v) => set({ target_retailers: v })} other={p.other_target_retailers} onOther={(v) => set({ other_target_retailers: v })} /></div>
+            <div className="bench-field"><span className="bench-label">Distributors you want</span><Chips label="Target distributors" options={refs.distributors} selected={p.target_distributors} onChange={(v) => set({ target_distributors: v })} other={p.other_target_distributors} onOther={(v) => set({ other_target_distributors: v })} /></div>
+            <div className="bench-field"><span className="bench-label">Channels you want</span><Chips label="Target channels" options={refs.channels} selected={p.target_channels} onChange={(v) => set({ target_channels: v })} other={p.other_target_channels} onOther={(v) => set({ other_target_channels: v })} /></div>
             <div className="bench-field"><span className="bench-label">Regions</span><Chips label="Target regions" options={refs.regions.map((r) => ({ id: r.code, name: r.name }))} selected={p.target_regions} onChange={(v) => set({ target_regions: v })} /></div>
             <span className="bench-label">Or specific states</span>
             <UsTileMap selected={new Set(p.target_states)} names={names} onToggle={(code) => toggleState("target_states", code)} />
@@ -140,8 +181,8 @@ export function BrandBuilder({ orgId, isOwner, company: c0, profile: p0, product
               <Select id="bp-trade" label="Trade and promo budget" value={p.trade_budget_band} options={TRADE} onChange={(v) => set({ trade_budget_band: v })} />
             </div>
             <div className="bench-grid-2">
-              <div className="bench-field"><label className="bench-label" htmlFor="bp-rate">Up to what commission (%)</label><input id="bp-rate" className="bench-input" inputMode="decimal" value={p.max_rate ?? ""} onChange={(e) => set({ max_rate: num(e.target.value) })} placeholder="5" /></div>
-              <div className="bench-field"><label className="bench-label" htmlFor="bp-ret">Up to what monthly retainer ($)</label><input id="bp-ret" className="bench-input" inputMode="decimal" value={p.max_retainer ?? ""} onChange={(e) => set({ max_retainer: num(e.target.value) })} placeholder="1500" /></div>
+              <NumberField id="bp-rate" label="Up to what commission (%)" decimal max={100} value={p.max_rate} onChange={(v) => set({ max_rate: v })} placeholder="5" />
+              <NumberField id="bp-ret" label="Up to what monthly retainer ($)" decimal max={1_000_000} value={p.max_retainer} onChange={(v) => set({ max_retainer: v })} placeholder="1500" />
             </div>
             <div className="bench-field"><label className="bench-label" htmlFor="bp-need">What you need from a broker</label><textarea id="bp-need" className="bench-input" maxLength={2000} value={p.looking_for ?? ""} placeholder="e.g. Category reviews at Kroger and Meijer this spring, plus help with KeHE item setup." onChange={(e) => set({ looking_for: e.target.value })} /></div>
           </section>
