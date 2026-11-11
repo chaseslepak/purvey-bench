@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Comparison } from "@/components/site/Comparison";
 import { CtaBand } from "@/components/site/CtaBand";
 
-export const metadata: Metadata = { title: "Pricing", description: "Brands are free, always. Brokers list for $100 a month, flat." };
+export const metadata: Metadata = { title: "Pricing", description: "Brands are free, always. Brokers list for $100 a month, or $300 a year paid up front (75% off)." };
 
 export default function Pricing() {
   return (
@@ -21,8 +21,9 @@ export default function Pricing() {
         </div>
         <div className="bench-section bench-stack">
           <div className="bench-eyebrow">Brokers</div>
-          <div className="bench-price">$100<span style={{ fontSize: "1.5rem" }}> / month</span></div>
-          <p className="bench-muted">One flat listing. No tiers, contact caps, lead fees or paid placement. Cancel any time.</p>
+          <div className="bench-price">$100<span className="bench-price_per"> / month</span></div>
+          <p className="bench-muted" style={{ margin: 0 }}>Or <strong>$300 a year</strong> paid up front: 75% off, $25 a month.</p>
+          <p className="bench-muted">One flat listing. No tiers, contact caps, lead fees or paid placement. Choose a plan when you sign up, then build your listing. Cancel any time.</p>
           <div><Link href="/sign-up?role=broker" className="button w-button">Start your listing</Link></div>
         </div>
       </section>

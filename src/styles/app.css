@@ -352,3 +352,10 @@ a.bench-market_item:hover { border-color: var(--pv-ink); }
 .bench-starinput_star:has(input:focus-visible) { outline: 0.125rem solid #4d65ff; outline-offset: 2px; }
 .bench-todo .bench-link-btn { text-align: left; }
 .bench-tabs.is-steps a { padding: 12px 14px; }
+
+/* ---------- Plans (broker paywall) ---------- */
+.bench-plan.is-best { box-shadow: inset 0 0 0 2px var(--pv-blue); }
+.bench-price_per { font-size: 1.5rem; }
+.bench-checklist { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.bench-checklist li { position: relative; padding-left: 28px; }
+.bench-checklist li::before { content: ""; position: absolute; left: 4px; top: 0.35em; width: 12px; height: 7px; border-left: 2px solid var(--pv-blue); border-bottom: 2px solid var(--pv-blue); transform: rotate(-45deg); }

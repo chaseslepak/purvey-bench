@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin";
-import { LISTING_PRICE_LOOKUP_KEY, stripe, stripeConfigured } from "@/lib/billing/stripe";
+import { LISTING_LOOKUP_KEYS, stripe, stripeConfigured } from "@/lib/billing/stripe";
 
 export const metadata: Metadata = { title: "Overview" };
 
@@ -14,7 +14,7 @@ async function stripeMrr(): Promise<{ cents: number; count: number } | null> {
     let cents = 0, count = 0;
     for await (const sub of stripe().subscriptions.list({ status: "active", limit: 100, expand: ["data.items.data.price"] })) {
       for (const item of sub.items.data) {
-        if (item.price.lookup_key !== LISTING_PRICE_LOOKUP_KEY) continue;
+        if (!LISTING_LOOKUP_KEYS.includes(item.price.lookup_key ?? "")) continue;
         const amount = item.price.unit_amount ?? 0;
         const monthly = item.price.recurring?.interval === "year" ? amount / 12 : amount;
         cents += monthly * (item.quantity ?? 1);

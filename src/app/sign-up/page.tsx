@@ -20,7 +20,7 @@ export default async function SignUp({ searchParams }: { searchParams: Promise<{
           <h1 className="bench-h-section">Create your account</h1>
           <p className="bench-lede">
             Brands search, see full broker profiles and message brokers for free. Brokers list for $100 a month,
-            flat. No tiers, no lead fees, no paid placement.
+            or $300 a year paid up front (75% off). No tiers, no lead fees, no paid placement.
           </p>
           <div className="bench-for-brokers">
             <MarketList compact items={demand} audience="brokers" heading="Brands are seeking brokers for"

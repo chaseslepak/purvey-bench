@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { ListingBuilder, type BuilderInitial } from "./ListingBuilder";
 import type { ChecklistItem } from "./actions";
-import { stripe, stripeConfigured } from "@/lib/billing/stripe";
+import { ChoosePlan } from "./ChoosePlan";
+import { PLANS, type Plan, stripe, stripeConfigured } from "@/lib/billing/stripe";
+import { hasListingAccess } from "@/lib/billing/subscription";
 import { syncSubscription } from "@/lib/billing/sync";
 import type { Freq } from "@/lib/coverage";
 import { getReference } from "@/lib/reference";
@@ -27,18 +29,25 @@ export default async function ListingPage({ searchParams }: { searchParams: Prom
       const cs = await stripe().checkout.sessions.retrieve(session_id);
       if (cs.client_reference_id === session.org.id && cs.status === "complete" && cs.subscription) {
         await syncSubscription(typeof cs.subscription === "string" ? cs.subscription : cs.subscription.id);
-        banner = "Payment received. Your listing is live.";
+        banner = "Payment received. Build your listing below and publish it when it's ready.";
       }
     } catch {
-      banner = "Payment received. Your listing will go live within a minute.";
+      banner = "Payment received. It can take a minute to confirm; refresh if this page still asks for a plan.";
     }
   } else if (checkout === "cancelled") {
-    banner = "Checkout was cancelled. Your listing is saved; you can go live any time.";
+    banner = "Checkout was cancelled. Nothing was charged.";
   }
 
   const db = await createClient();
   const { data: listing } = await db.from("broker_listings").select("*").eq("org_id", session.org.id).single();
   if (!listing) redirect("/app");
+
+  // Pay first: brokers choose a plan before they can build their listing.
+  const { data: sub } = await db.from("subscriptions").select("status, comped, current_period_end").eq("org_id", session.org.id).maybeSingle();
+  if (!hasListingAccess(sub)) {
+    const plans = (Object.keys(PLANS) as Plan[]).map((key) => ({ key, label: PLANS[key].label, price: PLANS[key].price, per: PLANS[key].per, note: PLANS[key].note }));
+    return <ChoosePlan plans={plans} isOwner={session.org.memberRole === "owner"} lapsed={Boolean(listing.live_since)} banner={banner} />;
+  }
   const [org, contact, states, retailers, references, documents, checklist, display, verification, ref] = await Promise.all([
     db.from("organizations").select("name, website, hq_city, hq_state, logo_url").eq("id", session.org.id).single(),
     db.from("broker_contacts").select("*").eq("listing_id", listing.id).maybeSingle(),

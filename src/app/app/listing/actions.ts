@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { stripe, stripeConfigured, listingPriceId } from "@/lib/billing/stripe";
+import { PLANS, type Plan, stripe, stripeConfigured, listingPriceId } from "@/lib/billing/stripe";
+import { hasListingAccess } from "@/lib/billing/subscription";
 import { requestOrigin } from "@/lib/origin";
 import { getSession } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -254,42 +255,47 @@ export async function requestVerification(): Promise<{ ok: boolean; error?: stri
   return { ok: true };
 }
 
-/**
- * Submit the listing and, unless it's already paid for or comped, open
- * Stripe Checkout for the $100/month Bench Listing. The client navigates the
- * TOP window to the returned URL so Checkout never loads inside the iframe.
- */
-export async function submitAndCheckout(): Promise<{ ok: true; checkoutUrl?: string } | { ok: false; error: string }> {
+/** Publish the listing. Brokers pay before building, so this goes straight live. */
+export async function publishListing(): Promise<{ ok: true } | { ok: false; error: string }> {
   const { session, db, listing } = await context();
-  if (session.org!.memberRole !== "owner") return { ok: false, error: "Only an owner can submit the listing and start billing." };
+  if (session.org!.memberRole !== "owner") return { ok: false, error: "Only an owner can publish the listing." };
+  const { data: sub } = await db.from("subscriptions").select("status, comped, current_period_end").eq("org_id", listing.org_id).maybeSingle();
+  if (!hasListingAccess(sub)) return { ok: false, error: "Choose a plan first." };
   const { error } = await db.rpc("submit_listing");
   if (error) return { ok: false, error: error.message.replace(/^.*?: /, "") };
+  revalidatePath("/app/listing");
+  return { ok: true };
+}
 
-  const { data: sub } = await db.from("subscriptions").select("status, comped, stripe_customer_id").eq("org_id", listing.org_id).maybeSingle();
-  if (sub?.comped || ["active", "trialing", "past_due"].includes(sub?.status ?? "")) {
-    revalidatePath("/app/listing");
-    return { ok: true };
-  }
+/**
+ * Open Stripe Checkout for the chosen plan. Brokers pay before they can build
+ * their listing. The client navigates the TOP window to the returned URL so
+ * Checkout never loads inside the purveycpg.com iframe.
+ */
+export async function startCheckout(plan: Plan): Promise<{ ok: true; checkoutUrl?: string } | { ok: false; error: string }> {
+  if (!(plan in PLANS)) return { ok: false, error: "Choose a plan." };
+  const session = await getSession();
+  if (!session?.org || session.org.type !== "broker") return { ok: false, error: "Only brokerages subscribe." };
+  if (session.org.memberRole !== "owner") return { ok: false, error: "Only an owner can start billing." };
+  const orgId = session.org.id;
+  const admin = createAdminClient();
+  const { data: sub } = await admin.from("subscriptions").select("status, comped, current_period_end, stripe_customer_id").eq("org_id", orgId).maybeSingle();
+  if (hasListingAccess(sub)) return { ok: true };
   if (!stripeConfigured()) return { ok: false, error: "Billing isn't configured in this environment yet." };
 
-  const admin = createAdminClient();
   let customer = sub?.stripe_customer_id ?? null;
   if (!customer) {
-    const c = await stripe().customers.create({
-      name: session.org!.name,
-      email: session.email,
-      metadata: { org_id: listing.org_id, app: "purvey-bench" },
-    });
+    const c = await stripe().customers.create({ name: session.org.name, email: session.email, metadata: { org_id: orgId, app: "purvey-bench" } });
     customer = c.id;
-    await admin.from("subscriptions").upsert({ org_id: listing.org_id, stripe_customer_id: customer }, { onConflict: "org_id" });
+    await admin.from("subscriptions").upsert({ org_id: orgId, stripe_customer_id: customer }, { onConflict: "org_id" });
   }
   const origin = await requestOrigin();
   const checkout = await stripe().checkout.sessions.create({
     mode: "subscription",
     customer,
-    client_reference_id: listing.org_id,
-    line_items: [{ price: await listingPriceId(), quantity: 1 }],
-    subscription_data: { metadata: { org_id: listing.org_id } },
+    client_reference_id: orgId,
+    line_items: [{ price: await listingPriceId(plan), quantity: 1 }],
+    subscription_data: { metadata: { org_id: orgId, plan } },
     allow_promotion_codes: false,
     success_url: `${origin}/app/listing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/app/listing?checkout=cancelled`,

@@ -40,7 +40,7 @@ export async function composeEmail(kind: Kind, payload: P, ctx: { appUrl: string
       break;
     case "listing_submitted":
       subject = "Your listing is submitted"; heading = "Listing submitted";
-      paragraphs = ["Start your $100 monthly subscription to go live, if you haven't already."]; cta = { label: "Open your listing", href: `${ctx.appUrl}/app/listing` };
+      paragraphs = ["It isn't visible to brands yet. Open your listing and publish it to go live."]; cta = { label: "Open your listing", href: `${ctx.appUrl}/app/listing` };
       break;
     case "listing_live":
       subject = "Your Purvey Bench listing is live"; heading = "You're live";

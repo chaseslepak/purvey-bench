@@ -4,7 +4,7 @@ import { admin, anon, cleanup, deliverStripeEvent, made, pdf, signUpAndOnboard, 
 
 /**
  * Acceptance test 1 (Phase 2 part): a broker signs up, builds a listing,
- * pays through Stripe test mode and becomes visible to brands.
+ * pays through Stripe test mode first, then builds and publishes, and becomes visible to brands.
  * 
  */
 test.describe("broker listing and billing (live)", () => {
@@ -20,6 +20,28 @@ test.describe("broker listing and billing (live)", () => {
     const status = async () => (await db.from("broker_listings").select("status, completeness").eq("org_id", orgId).single()).data!;
     const saved = async () => { await page.waitForTimeout(200); await page.locator(".bench-save.is-saved").waitFor({ timeout: 10_000 }); };
     const step = (name: string) => page.getByRole("navigation", { name: "Listing steps" }).getByRole("button", { name: new RegExp(name) }).click();
+
+    // Pay first: the plan picker, then Stripe Checkout at the top level (captured, not followed).
+    await page.goto("/app/listing");
+    await expect(page.getByRole("heading", { name: /Choose your plan/ })).toBeVisible();
+    let checkoutUrl = "";
+    await page.route("https://checkout.stripe.com/**", (r) => { checkoutUrl = r.request().url(); return r.abort(); });
+    await page.getByRole("button", { name: "Pay $300 for the year" }).click();
+    await expect.poll(() => checkoutUrl, { timeout: 15_000 }).toMatch(/^https:\/\/checkout\.stripe\.com\//);
+
+    // Pay with Stripe's test card, as Checkout would, then Stripe's real event hits our webhook.
+    const s = stripeTest();
+    const customer = (await db.from("subscriptions").select("stripe_customer_id").eq("org_id", orgId).single()).data!.stripe_customer_id as string;
+    m.customers.push(customer);
+    const pm = await s.paymentMethods.attach("pm_card_visa", { customer });
+    await s.customers.update(customer, { invoice_settings: { default_payment_method: pm.id } });
+    const price = (await s.prices.list({ lookup_keys: ["bench_listing_annual"] })).data[0].id;
+    const sub = await s.subscriptions.create({ customer, items: [{ price }], metadata: { org_id: orgId } });
+    m.subs.push(sub.id);
+    const created = await deliverStripeEvent(baseURL!, "customer.subscription.created", sub.id);
+    expect(created.status).toBe(200);
+    expect((await db.from("subscriptions").select("plan").eq("org_id", orgId).single()).data!.plan).toBe("annual");
+    expect((await status()).status).toBe("draft"); // paid, not yet published
 
     await page.goto("/app/listing");
     await expect(page.locator(".bench-tag").first()).toHaveText("Draft");
@@ -86,26 +108,10 @@ test.describe("broker listing and billing (live)", () => {
       expect(r.violations.map((v) => `${v.id}: ${v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(" | ")}`), `axe on ${s}`).toEqual([]);
     }
 
-    // Submit -> Stripe Checkout at the top level (captured, not followed).
-    let checkoutUrl = "";
-    await page.route("https://checkout.stripe.com/**", (r) => { checkoutUrl = r.request().url(); return r.abort(); });
-    await page.getByRole("button", { name: "Submit and go live" }).click();
-    await expect.poll(() => checkoutUrl, { timeout: 15_000 }).toMatch(/^https:\/\/checkout\.stripe\.com\//);
-    expect((await status()).status).toBe("submitted");
-
-    // Pay with Stripe's test card, as Checkout would, then Stripe's real event hits our webhook.
-    const s = stripeTest();
-    const customer = (await db.from("subscriptions").select("stripe_customer_id").eq("org_id", orgId).single()).data!.stripe_customer_id as string;
-    m.customers.push(customer);
-    const pm = await s.paymentMethods.attach("pm_card_visa", { customer });
-    await s.customers.update(customer, { invoice_settings: { default_payment_method: pm.id } });
-    const price = (await s.prices.list({ lookup_keys: ["bench_listing_monthly"] })).data[0].id;
-    const sub = await s.subscriptions.create({ customer, items: [{ price }], metadata: { org_id: orgId } });
-    m.subs.push(sub.id);
+    // Publish: already paid, so it goes straight live.
     const started = Date.now();
-    const created = await deliverStripeEvent(baseURL!, "customer.subscription.created", sub.id);
-    expect(created.status).toBe(200);
-    expect((await status()).status).toBe("live");
+    await page.getByRole("button", { name: "Publish listing" }).click();
+    await expect.poll(async () => (await status()).status, { timeout: 15_000 }).toBe("live");
     expect(Date.now() - started).toBeLessThan(60_000); // "appears within a minute"
     const { data: visible } = await anon().from("broker_listings").select("id").eq("org_id", orgId);
     expect(visible).toHaveLength(1);

@@ -6,7 +6,7 @@ import { UsTileMap } from "@/components/listing/UsTileMap";
 import { coverageSummary, FREQ_LABEL, topRetailers, type Freq } from "@/lib/coverage";
 import { createClient } from "@/lib/supabase/browser";
 import {
-  attachDocument, attachLogo, deleteDocument, documentLink, requestVerification, saveStep, setDocumentPrivacy, submitAndCheckout,
+  attachDocument, attachLogo, deleteDocument, documentLink, requestVerification, saveStep, setDocumentPrivacy, publishListing,
   type ChecklistItem, type DocRow, type SaveResult, type StepName,
 } from "./actions";
 
@@ -94,8 +94,8 @@ function Field({ id, label, hint, children }: { id: string; label: string; hint?
 }
 
 const STATE_COPY: Record<string, { label: string; help: string; tone: string }> = {
-  draft: { label: "Draft", help: "Brands can't see your listing yet. Finish the steps, then submit and start your $100 monthly subscription to go live.", tone: "" },
-  submitted: { label: "Submitted", help: "Your listing is ready. Start your $100 monthly subscription to go live.", tone: "is-mist" },
+  draft: { label: "Draft", help: "Brands can't see your listing yet. Finish the steps, then publish it.", tone: "" },
+  submitted: { label: "Submitted", help: "Your listing is ready. Publish it to go live.", tone: "is-mist" },
   live: { label: "Live", help: "Brands can find and message you.", tone: "is-blue" },
   paused_billing: { label: "Paused for billing", help: "Your last payment didn't go through. Update your card in Billing and your listing goes live again automatically.", tone: "" },
   paused_admin: { label: "Paused by Purvey", help: "Purvey has paused your listing. Reply to our email or contact us to resolve it.", tone: "" },
@@ -149,14 +149,9 @@ export function ListingBuilder({ initial, refs, banner }: { initial: BuilderInit
   function submit() {
     setSubmitError(null);
     startSubmit(async () => {
-      const r = await submitAndCheckout();
+      const r = await publishListing();
       if (!r.ok) return setSubmitError(r.error);
-      if (r.checkoutUrl) {
-        // Top-level navigation: Stripe Checkout must never load inside the purveycpg.com iframe.
-        (window.top ?? window).location.href = r.checkoutUrl;
-      } else {
-        window.location.reload();
-      }
+      window.location.reload();
     });
   }
 
@@ -327,13 +322,13 @@ export function ListingBuilder({ initial, refs, banner }: { initial: BuilderInit
           {(initial.displayState === "draft" || initial.displayState === "submitted") && (
             <div className="bench-card bench-stack">
               <h2 className="bench-eyebrow" style={{ margin: 0 }}>Go live</h2>
-              <p className="bench-small" style={{ margin: 0 }}>$100 a month, flat. Cancel any time. Ranking is by fit only; payment never changes your position.</p>
+              <p className="bench-small" style={{ margin: 0 }}>Your plan is paid. Publish once you have a description, a public contact, your states and at least three retailers.</p>
               {initial.isOwner ? (
                 <button type="button" className="button bench-btn-block w-button" onClick={submit} disabled={submitting}>
-                  {submitting ? "Opening checkout…" : "Submit and go live"}
+                  {submitting ? "Publishing…" : "Publish listing"}
                 </button>
               ) : (
-                <p className="bench-small bench-muted" style={{ margin: 0 }}>An owner on your team can submit and start billing.</p>
+                <p className="bench-small bench-muted" style={{ margin: 0 }}>An owner on your team can publish the listing.</p>
               )}
               {submitError && <p className="bench-notice is-error" role="alert" style={{ margin: 0 }}>{submitError}</p>}
             </div>

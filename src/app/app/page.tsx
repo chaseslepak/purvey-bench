@@ -3,14 +3,15 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { loadBrand } from "@/lib/brand-data";
 import { brandChecklist, completeness } from "@/lib/brand-profile";
+import { hasListingAccess } from "@/lib/billing/subscription";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Dashboard", robots: { index: false } };
 
 const STATE_COPY: Record<string, { label: string; help: string }> = {
-  draft: { label: "Draft", help: "Finish your listing and submit it. It goes live once your $100 monthly subscription starts." },
-  submitted: { label: "Submitted", help: "Your listing is ready. Start your $100 monthly subscription to go live." },
+  draft: { label: "Draft", help: "Finish your listing and publish it." },
+  submitted: { label: "Submitted", help: "Your listing is ready. Publish it to go live." },
   live: { label: "Live", help: "Brands can find and message you." },
   paused_billing: { label: "Paused for billing", help: "Your payment didn’t go through. Update your card in Billing to go live again." },
   paused_admin: { label: "Paused by Purvey", help: "Purvey has paused your listing. Reply to our email or contact us to resolve it." },
@@ -24,7 +25,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
 
   let listing: { id: string; completeness: number; verified_at: string | null } | null = null;
   let displayState: string | null = null;
-  let sub: { current_period_end: string | null; comped: boolean } | null = null;
+  let sub: { current_period_end: string | null; comped: boolean; status: string | null; plan: string | null } | null = null;
   if (session.org.type === "broker") {
     const { data } = await supabase.from("broker_listings").select("id, completeness, verified_at").eq("org_id", session.org.id).single();
     listing = data;
@@ -32,7 +33,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       const { data: s } = await supabase.rpc("listing_display_state", { p_listing: listing.id });
       displayState = s as string | null;
     }
-    const { data: subscription } = await supabase.from("subscriptions").select("current_period_end, comped").eq("org_id", session.org.id).maybeSingle();
+    const { data: subscription } = await supabase.from("subscriptions").select("current_period_end, comped, status, plan").eq("org_id", session.org.id).maybeSingle();
     sub = subscription;
   }
 
@@ -53,11 +54,19 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         {welcome && (
           <p className="bench-notice" role="status">
             {welcome === "broker"
-              ? "Welcome to Purvey Bench. Next, build your listing. Brands see it once you go live."
+              ? "Welcome to Purvey Bench. Next, choose a plan and build your listing. Brands see it once you publish."
               : "Welcome to Purvey Bench. Search, profiles and messaging are free for brands, always."}
           </p>
         )}
       </section>
+
+      {session.org.type === "broker" && !hasListingAccess(sub) && session.org.memberRole === "owner" && displayState !== "paused_billing" && (
+        <section className="bench-section bench-stack" aria-labelledby="plan-cta">
+          <h2 id="plan-cta" className="bench-h-section">Choose a plan to start your listing</h2>
+          <p className="bench-muted" style={{ margin: 0 }}>$100 a month, or $300 for the year paid up front (75% off). You build your listing right after checkout.</p>
+          <div><Link href="/app/listing" className="button w-button">Choose a plan</Link></div>
+        </section>
+      )}
 
       {session.org.type === "broker" && listing && displayState && (
         <section className="bench-grid-3">
@@ -75,7 +84,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             <p className="bench-small bench-muted">At 80% or more you can ask Purvey to verify your listing.</p>
           </div>
           <div className="bench-card bench-stack">
-            <div className="bench-eyebrow">Next billing date</div>
+            <div className="bench-eyebrow">{sub?.plan === "annual" ? "Annual plan renews" : sub?.plan === "monthly" ? "Monthly plan renews" : "Next billing date"}</div>
             <div className="bench-h-section" style={{ fontSize: "1.5rem" }}>
               {sub?.comped ? "Complimentary" : sub?.current_period_end ? new Date(sub.current_period_end).toLocaleDateString("en-US", { dateStyle: "medium" }) : "Not started"}
             </div>
@@ -85,7 +94,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
 
       {session.org.type === "broker" && (
         <div className="bench-row">
-          <Link href="/app/listing" className="button w-button">Edit your listing</Link>
+          <Link href="/app/listing" className="button w-button">{hasListingAccess(sub) ? "Edit your listing" : "Choose a plan"}</Link>
           <Link href="/app/billing" className="button bench-btn-ghost w-button">Billing</Link>
         </div>
       )}

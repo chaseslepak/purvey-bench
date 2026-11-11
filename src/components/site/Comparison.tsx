@@ -1,5 +1,5 @@
 const ROWS: [string, string, string][] = [
-  ["Price", "Free, always", "$100 a month, flat"],
+  ["Price", "Free, always", "$100 a month, or $300 a year up front"],
   ["Search and full broker profiles", "Yes", "Your listing is searchable"],
   ["Contact details", "Yes, with a free account", "Shown to signed-in brands"],
   ["Messaging", "Start conversations", "Reply to brands that reach out"],

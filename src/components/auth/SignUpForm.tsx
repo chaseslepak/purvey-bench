@@ -27,7 +27,7 @@ export function SignUpForm({ initialRole, turnstileSiteKey }: { initialRole?: "b
             <input type="radio" name="role" value="broker" checked={role === "broker"} onChange={() => setRole("broker")} />
             <span className="bench-choice_title">Broker</span>
             <span className="bench-small bench-muted" style={{ display: "block", marginTop: 4 }}>
-              List your brokerage for $100 a month, flat.
+              List your brokerage for $100 a month, or $300 a year paid up front (75% off).
             </span>
           </label>
         </div>
