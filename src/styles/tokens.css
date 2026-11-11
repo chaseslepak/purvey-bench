@@ -1,0 +1,70 @@
+/*
+ * Purvey design tokens.
+ *
+ * Every value here was read from the live site (www.purveycpg.com) with
+ * getComputedStyle in Chromium on 2026-11-08, cross-checked against the
+ * vendored Webflow stylesheet (src/styles/webflow.css). Where the live site
+ * differs from the written brief, the live value wins and is noted.
+ *
+ * App screens must use only these tokens plus the Webflow component classes
+ * (.button, .text_title, .form_input, h1-h4, .heading-style-*).
+ */
+:root {
+  /* Surfaces */
+  --pv-ground: #cbc9c6;          /* body background */
+  --pv-cream: #f7f5f1;           /* content cards (Webflow --brand--gray-100) */
+  --pv-white: #ffffff;           /* nav bar, white sections */
+  --pv-cta: #a9c8e8;             /* CTA band (Webflow --brand--blue) */
+  --pv-dark: #1d1d1d;            /* footer, secondary button */
+  --pv-dark-2: #292d32;          /* hamburger lines */
+
+  /* Brand accents used by the live site (blog cards, feature panels) */
+  --pv-blue: #3676b1;            /* primary button */
+  --pv-blue-mid: #3f8ee0;
+  --pv-blue-sky: #5ab1f0;
+  --pv-blue-pale: #8fd0f7;
+  --pv-blue-mist: #d6dee8;
+
+  /* Text */
+  --pv-ink: #000000;             /* body text */
+  --pv-ink-soft: #333333;
+  --pv-muted: #535353;           /* .text-color-tertiary, eyebrows */
+  --pv-on-dark: #bfbebe;         /* footer text and links */
+
+  /* Lines */
+  --pv-line: #d7d7d7;            /* Webflow --border-color--border-secondary */
+  --pv-line-soft: #efeff2;
+
+  /* Status (derived only from the palette above) */
+  --pv-ok: #3676b1;
+  --pv-warn-bg: #fdf3dc;         /* app-only: conflict and billing notices */
+  --pv-warn-ink: #6b4e00;
+  --pv-danger-ink: #8a1c1c;
+
+  /* Type */
+  --pv-font-display: "Host Grotesk", sans-serif;  /* weight 400 */
+  --pv-font-body: Inter, sans-serif;              /* 400 and 500 */
+  --pv-eyebrow-tracking: 0.12em;
+
+  /* Radii. Live: CTA band and footer are 20px, not 24px as in the brief. */
+  --pv-radius-button: 8px;
+  --pv-radius-input: 12px;       /* .form_input */
+  --pv-radius-nav: 16px;
+  --pv-radius-band: 20px;        /* .section_joinus, .footer */
+  --pv-radius-card: 24px;        /* .section_features and app cards */
+
+  /* Spacing. Section gap = 20px; outer gutter 24px (16px at <=479). */
+  --pv-gap: 20px;
+  --pv-gutter: 24px;
+  --pv-card-pad: 52px;
+}
+
+@media screen and (max-width: 991px) {
+  :root { --pv-card-pad: 40px; }
+}
+@media screen and (max-width: 767px) {
+  :root { --pv-card-pad: 32px; }
+}
+@media screen and (max-width: 479px) {
+  :root { --pv-gutter: 16px; --pv-card-pad: 20px; }
+}

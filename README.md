@@ -67,7 +67,7 @@ Without Supabase keys the public pages still render, and sign-in shows a "not co
 | `NEXT_PUBLIC_MAIN_SITE_URL` | all | `https://www.purveycpg.com`; header and footer links |
 | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` | all | Supabase project; the anon key is safe in the browser because RLS protects the data |
 | `SUPABASE_SERVICE_ROLE_KEY` | server only | Stripe webhooks and cron (phase 2+). **Never** expose it to the client |
-| `COOKIE_DOMAIN` | server | `.purveycpg.com` in production, so the session works inside the purveycpg.com iframe; empty on localhost |
+| `COOKIE_DOMAIN` | all | `.purveycpg.com`, so the session works inside the purveycpg.com iframe. Applied only when the request host is on that domain, so previews and localhost still work |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | all / server | Turnstile. Without the secret, verification passes in development and **fails closed in production** |
 | `DATABASE_URL` | tests | Local Postgres for policy tests |
 
@@ -89,8 +89,7 @@ Without Supabase keys the public pages still render, and sign-in shows a "not co
 
    The seed creates 51 states/DC, 5 regions, 94 retailers, 27 distributors, 31 categories and 14 channels. It creates **no** brokers, brands or users.
 2. **Auth → URL configuration:** set the Site URL to `https://bench.purveycpg.com` and add `https://bench.purveycpg.com/auth/confirm` and `/auth/callback` (plus the `localhost:3000` equivalents) as redirect URLs.
-3. **Auth → Email templates → Magic link:** point the link at the confirm route. It uses `token_hash`, so it works even when opened on a different device:
-   `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next={{ .RedirectTo }}`
+3. **Auth → Email templates** (Magic link and Confirm signup): the button links to `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email`. `RedirectTo` is the `/auth/confirm?next=…` URL on whichever deployment the person signed in from (production, a preview or localhost), checked against the redirect allow-list. `token_hash` (not PKCE) means the link works on a different device. These templates are already set on the live project.
 4. **Auth → Providers → Google:** enable it with a Google OAuth client whose redirect URI is `https://<ref>.supabase.co/auth/v1/callback`.
 5. **Auth → SMTP:** use Resend's SMTP (`smtp.resend.com`) with a verified purveycpg.com domain, so sign-in mail comes from Purvey. Branded React Email templates arrive in phase 4.
 6. Make the first admin with SQL: `update public.users set is_admin = true where email = 'chase@…';`
