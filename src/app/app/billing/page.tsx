@@ -26,7 +26,7 @@ export default async function Billing() {
     <section className="bench-section bench-stack">
       <div className="text_title">{session.org.name}</div>
       <h1 className="bench-h-section">Billing</h1>
-      <p className="bench-lede" style={{ margin: 0 }}>Bench Listing: {PLANS.monthly.price} a month, or {PLANS.annual.price} a year paid up front (75% off). No tiers, lead fees or paid placement.</p>
+      <p className="bench-lede" style={{ margin: 0 }}>Bench Listing: {PLANS.monthly.price} a month, or {PLANS.annual.price} a year paid up front (25% off, early access). No tiers, lead fees or paid placement.</p>
       {sub?.comped ? (
         <p className="bench-notice" style={{ margin: 0 }}>Your listing is complimentary, courtesy of Purvey. There&rsquo;s nothing to pay.</p>
       ) : !sub?.stripe_subscription_id ? (

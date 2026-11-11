@@ -26,7 +26,7 @@ test.describe("broker listing and billing (live)", () => {
     await expect(page.getByRole("heading", { name: /Choose your plan/ })).toBeVisible();
     let checkoutUrl = "";
     await page.route("https://checkout.stripe.com/**", (r) => { checkoutUrl = r.request().url(); return r.abort(); });
-    await page.getByRole("button", { name: "Pay $300 for the year" }).click();
+    await page.getByRole("button", { name: "Pay $900 for the year" }).click();
     await expect.poll(() => checkoutUrl, { timeout: 15_000 }).toMatch(/^https:\/\/checkout\.stripe\.com\//);
 
     // Pay with Stripe's test card, as Checkout would, then Stripe's real event hits our webhook.

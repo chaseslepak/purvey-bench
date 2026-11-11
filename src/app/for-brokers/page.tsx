@@ -8,7 +8,7 @@ export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "For brokers",
-  description: "List your brokerage on Purvey Bench for $100 a month, or $300 a year paid up front. Brands find you by the retailers you actually call on.",
+  description: "List your brokerage on Purvey Bench for $100 a month, or $900 a year (25% off) for early access brokerages. Brands find you by the retailers you actually call on.",
 };
 
 const INCLUDED = [
@@ -44,7 +44,7 @@ export default async function ForBrokers() {
         </section>
       )}
       <section className="bench-section bench-stack">
-        <h2 className="bench-h-section">What’s included: $100 a month, or $300 a year up front</h2>
+        <h2 className="bench-h-section">What’s included for $100 a month</h2>
         <div className="bench-grid-3">
           {INCLUDED.map(([title, body]) => (
             <div key={title} className="bench-card bench-stack">

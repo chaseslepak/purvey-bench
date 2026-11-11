@@ -4,6 +4,7 @@ import { ListingBuilder, type BuilderInitial } from "./ListingBuilder";
 import type { ChecklistItem } from "./actions";
 import { ChoosePlan } from "./ChoosePlan";
 import { PLANS, type Plan, stripe, stripeConfigured } from "@/lib/billing/stripe";
+import { earlyAccessLeft } from "@/lib/billing/early-access";
 import { hasListingAccess } from "@/lib/billing/subscription";
 import { syncSubscription } from "@/lib/billing/sync";
 import type { Freq } from "@/lib/coverage";
@@ -47,8 +48,9 @@ export default async function ListingPage({ searchParams }: { searchParams: Prom
   // Pay first: brokers choose a plan before they can build their listing.
   const { data: sub } = await db.from("subscriptions").select("status, comped, current_period_end").eq("org_id", session.org.id).maybeSingle();
   if (!hasListingAccess(sub)) {
-    const plans = (Object.keys(PLANS) as Plan[]).map((key) => ({ key, label: PLANS[key].label, price: PLANS[key].price, per: PLANS[key].per, note: PLANS[key].note }));
-    return <ChoosePlan plans={plans} isOwner={session.org.memberRole === "owner"} lapsed={Boolean(listing.live_since)} banner={banner} />;
+    const left = await earlyAccessLeft();
+    const plans = (Object.keys(PLANS) as Plan[]).filter((k) => k !== "annual" || left > 0).map((key) => ({ key, label: PLANS[key].label, price: PLANS[key].price, per: PLANS[key].per, note: PLANS[key].note }));
+    return <ChoosePlan spotsLeft={left} plans={plans} isOwner={session.org.memberRole === "owner"} lapsed={Boolean(listing.live_since)} banner={banner} />;
   }
   const [org, contact, states, retailers, references, documents, checklist, display, verification, ref] = await Promise.all([
     db.from("organizations").select("name, website, hq_city, hq_state, logo_url").eq("id", session.org.id).single(),

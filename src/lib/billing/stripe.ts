@@ -18,7 +18,7 @@ export function stripe(): Stripe {
 /** Bench Listing plans. Prices are looked up by key in Stripe, never hard-coded. */
 export const PLANS = {
   monthly: { lookupKey: "bench_listing_monthly", label: "Monthly", price: "$100", per: "/ month", note: "Billed monthly. Cancel any time." },
-  annual: { lookupKey: "bench_listing_annual", label: "Annual", price: "$300", per: "/ year", note: "75% off: $25 a month, paid up front for 12 months." },
+  annual: { lookupKey: "bench_listing_annual", label: "Annual · early access", price: "$900", per: "/ year", note: "25% off: $75 a month, paid up front for 12 months. Limited to the first 12 brokerages." },
 } as const;
 export type Plan = keyof typeof PLANS;
 export const LISTING_LOOKUP_KEYS: string[] = Object.values(PLANS).map((p) => p.lookupKey);

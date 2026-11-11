@@ -393,3 +393,4 @@ a.bench-market_item:hover { border-color: var(--pv-ink); }
 }
 .bench-turnstile:empty { display: none; }
 .bench-turnstile { min-height: 65px; }
+.bench-spots { margin: 0; padding: 8px 12px; border-radius: var(--pv-radius-button); background: var(--pv-warn-bg); color: var(--pv-warn-ink); font-size: 0.875rem; }

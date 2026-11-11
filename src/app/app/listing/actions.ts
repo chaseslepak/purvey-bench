@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { PLANS, type Plan, stripe, stripeConfigured, listingPriceId } from "@/lib/billing/stripe";
+import { earlyAccessLeft } from "@/lib/billing/early-access";
 import { hasListingAccess } from "@/lib/billing/subscription";
 import { requestOrigin } from "@/lib/origin";
 import { getSession } from "@/lib/session";
@@ -285,6 +286,7 @@ export async function startCheckout(plan: Plan): Promise<{ ok: true; checkoutUrl
   const { data: sub } = await admin.from("subscriptions").select("status, comped, current_period_end, stripe_customer_id").eq("org_id", orgId).maybeSingle();
   if (hasListingAccess(sub)) return { ok: true };
   if (!stripeConfigured()) return { ok: false, error: "Billing isn't configured in this environment yet." };
+  if (plan === "annual" && (await earlyAccessLeft()) <= 0) return { ok: false, error: "The early access annual deals are all taken. The monthly plan is still available." };
 
   let customer = sub?.stripe_customer_id ?? null;
   if (!customer) {
