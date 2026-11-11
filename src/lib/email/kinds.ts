@@ -8,7 +8,7 @@ export type Kind =
   | "verification_verified" | "verification_rejected" | "verification_revoked"
   | "weekly_summary" | "digest"
   | "deal_update" | "true_up_report" | "true_up_invoiced" | "true_up_questioned" | "true_up_paid"
-  | "admin_listing_submitted" | "admin_verification_requested" | "admin_placement_requested" | "admin_report_filed" | "admin_digest";
+  | "admin_listing_submitted" | "admin_verification_requested" | "admin_placement_requested" | "admin_report_filed" | "admin_audit_requested" | "admin_digest" | "admin_warning";
 
 export const UNSUBSCRIBABLE: Record<Kind, boolean> = {
   new_conversation: true, new_message: true, broker_declined: true, placement_received: true,
@@ -16,7 +16,7 @@ export const UNSUBSCRIBABLE: Record<Kind, boolean> = {
   verification_verified: true, verification_rejected: true, verification_revoked: true,
   weekly_summary: true, digest: true,
   deal_update: true, true_up_report: true, true_up_invoiced: false, true_up_questioned: true, true_up_paid: true,
-  admin_listing_submitted: true, admin_verification_requested: true, admin_placement_requested: true, admin_report_filed: true, admin_digest: true,
+  admin_listing_submitted: true, admin_verification_requested: true, admin_placement_requested: true, admin_report_filed: true, admin_audit_requested: true, admin_digest: true, admin_warning: false,
 };
 
 export const KIND_LABEL: Record<Kind, string> = {
@@ -26,5 +26,5 @@ export const KIND_LABEL: Record<Kind, string> = {
   weekly_summary: "weekly summaries", digest: "daily digests",
   deal_update: "progress updates", true_up_report: "sales report notices", true_up_invoiced: "invoices", true_up_questioned: "invoice questions", true_up_paid: "payment notices",
   admin_listing_submitted: "admin: listings submitted", admin_verification_requested: "admin: verification requests",
-  admin_placement_requested: "admin: placement requests", admin_report_filed: "admin: reports", admin_digest: "admin: daily digest",
+  admin_placement_requested: "admin: placement requests", admin_report_filed: "admin: reports", admin_audit_requested: "admin: commission audit requests", admin_digest: "admin: daily digest", admin_warning: "account notices",
 };

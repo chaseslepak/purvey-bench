@@ -64,21 +64,35 @@ export function Thread(p: ThreadProps) {
   // Realtime: new messages and read receipts (RLS-filtered), plus private typing broadcasts.
   useEffect(() => {
     let active = true;
-    const pg = supabase
-      .channel(`msgs:${p.conversationId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${p.conversationId}` }, (payload) => {
-        const m = payload.new as Msg;
-        setMessages((ms) => (ms.some((x) => x.id === m.id) ? ms : [...ms, m]));
-        if (m.sender_org_id !== p.myOrgId) { setTyping(null); void markRead(p.conversationId); }
-      })
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages", filter: `conversation_id=eq.${p.conversationId}` }, (payload) => {
-        const m = payload.new as Msg;
-        setMessages((ms) => ms.map((x) => (x.id === m.id ? { ...x, read_at: m.read_at } : x)));
-      })
-      .subscribe();
+    let pg: ReturnType<typeof supabase.channel> | null = null;
+    // Realtime is best-effort: whenever the channel (re)connects, catch up from
+    // the database so a missed insert or read receipt still shows.
+    const catchUp = async () => {
+      const { data } = await supabase.from("messages").select("id, body, created_at, sender_org_id, sender_user_id, is_auto_reply, read_at, attachments")
+        .eq("conversation_id", p.conversationId).order("created_at");
+      if (!active || !data) return;
+      setMessages((ms) => {
+        const byId = new Map(ms.map((x) => [x.id, x]));
+        for (const m of data as Msg[]) byId.set(m.id, { ...byId.get(m.id), ...m });
+        return [...byId.values()].sort((a, b) => a.created_at.localeCompare(b.created_at));
+      });
+    };
     (async () => {
+      // Subscribe only once the user's token is on the socket, or RLS filters every event out.
       await supabase.realtime.setAuth();
       if (!active) return;
+      pg = supabase
+        .channel(`msgs:${p.conversationId}`)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${p.conversationId}` }, (payload) => {
+          const m = payload.new as Msg;
+          setMessages((ms) => (ms.some((x) => x.id === m.id) ? ms : [...ms, m]));
+          if (m.sender_org_id !== p.myOrgId) { setTyping(null); void markRead(p.conversationId); }
+        })
+        .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages", filter: `conversation_id=eq.${p.conversationId}` }, (payload) => {
+          const m = payload.new as Msg;
+          setMessages((ms) => ms.map((x) => (x.id === m.id ? { ...x, read_at: m.read_at } : x)));
+        })
+        .subscribe((status) => { if (status === "SUBSCRIBED") void catchUp(); });
       const ch = supabase.channel(`conv:${p.conversationId}`, { config: { private: true, broadcast: { self: false } } })
         .on("broadcast", { event: "typing" }, ({ payload }) => {
           if (payload?.org === p.myOrgId) return;
@@ -89,7 +103,9 @@ export function Thread(p: ThreadProps) {
       channelRef.current = ch;
     })();
     void markRead(p.conversationId);
-    return () => { active = false; void supabase.removeChannel(pg); if (channelRef.current) void supabase.removeChannel(channelRef.current); };
+    const onVisible = () => { if (document.visibilityState === "visible") void catchUp(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { active = false; document.removeEventListener("visibilitychange", onVisible); if (pg) void supabase.removeChannel(pg); if (channelRef.current) void supabase.removeChannel(channelRef.current); };
   }, [supabase, p.conversationId, p.myOrgId]);
 
   useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight }); }, [messages.length]);

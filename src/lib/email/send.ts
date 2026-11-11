@@ -117,3 +117,24 @@ export async function enqueueWeeklySummaries(): Promise<number> {
   }
   return n;
 }
+
+/** Daily: one queue summary to each admin, only when something is waiting. */
+export async function enqueueAdminDigest(): Promise<number> {
+  const db = createAdminClient();
+  const count = async (table: string, col: string, val: string) => (await db.from(table).select("*", { count: "exact", head: true }).eq(col, val)).count ?? 0;
+  const items = [
+    { brand: "Verification requests", note: String(await count("verifications", "status", "requested")) },
+    { brand: "Open reports", note: String(await count("reports", "status", "open")) },
+    { brand: "New placement requests", note: String(await count("placement_requests", "status", "new")) },
+    { brand: "New commission audit requests", note: String(await count("audit_requests", "status", "new")) },
+    { brand: "Listings submitted, not live", note: String(await count("broker_listings", "status", "submitted")) },
+  ].filter((i) => i.note !== "0");
+  if (!items.length) return 0;
+  const { data: admins } = await db.from("users").select("id").eq("is_admin", true).is("suspended_at", null);
+  let n = 0;
+  for (const a of admins ?? []) {
+    await db.from("email_outbox").insert({ to_user_id: a.id, kind: "admin_digest", payload: { items } });
+    n++;
+  }
+  return n;
+}

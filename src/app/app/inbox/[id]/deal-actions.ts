@@ -211,3 +211,15 @@ export async function markPaid(conversationId: string, periodId: string, input: 
   done(c.id, "commissions");
   return { ok: true, message: "Marked paid. The broker has been notified." };
 }
+
+/** "Have Purvey audit commissions": a Purvey service. Bench only records the request. */
+export async function requestCommissionAudit(conversationId: string, note: string): Promise<R> {
+  const { db, c } = await ctx(conversationId);
+  const id = c.id;
+  const n = z.string().trim().max(4000).safeParse(note);
+  if (!n.success) return { error: "Keep the note under 4,000 characters." };
+  const { error } = await db.rpc("request_commission_audit", { p_conv: id, p_note: n.data });
+  if (error) return { error: "Couldn't send the request." };
+  flush(); done(id, "commissions");
+  return { ok: true };
+}
