@@ -91,3 +91,38 @@ export function tinyPng(): Buffer {
   return Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk("IHDR", ihdr), chunk("IDAT", zlib.deflateSync(raw)), chunk("IEND", Buffer.alloc(0))]);
 }
 export const pdf = (extra = "") => Buffer.from(`%PDF-1.4\n1 0 obj << /Type /Catalog ${extra} >> endobj\ntrailer << /Root 1 0 R >>\n%%EOF\n`);
+
+type BrokerSpec = {
+  name: string; states: string[]; retailers: [slug: string, freq: "weekly" | "monthly" | "occasional"][];
+  channels: string[]; categories: string[]; conflicts?: string[]; distributors: string[]; email: string; verified?: boolean;
+};
+
+/** A live, comped broker created directly with the service role (test fixture). */
+export async function makeLiveBroker(m: Made, spec: BrokerSpec) {
+  const db = admin();
+  const ids = async (table: string, slugs: string[]) => {
+    const { data } = await db.from(table).select("id, slug").in("slug", slugs);
+    return slugs.map((s) => (data ?? []).find((r) => r.slug === s)!.id as number);
+  };
+  const { data: u } = await db.auth.admin.createUser({ email: `bench-e2e-fixture-${Date.now()}-${Math.round(Math.random() * 1e6)}@example.com`, email_confirm: true });
+  m.userIds.push(u.user!.id);
+  await db.from("users").update({ role: "broker" }).eq("id", u.user!.id);
+  const slug = spec.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  const { data: org, error } = await db.from("organizations").insert({ type: "broker", name: spec.name, slug, hq_city: "Chicago", hq_state: "IL", created_by: u.user!.id }).select("id").single();
+  if (error) throw error;
+  m.orgIds.push(org!.id);
+  await db.from("org_members").insert({ org_id: org!.id, user_id: u.user!.id, role: "owner" });
+  const { data: l } = await db.from("broker_listings").insert({
+    org_id: org!.id, about: `${spec.name} is an E2E fixture brokerage.`, channels: await ids("channels", spec.channels), categories: await ids("categories", spec.categories),
+    conflicts: await ids("categories", spec.conflicts ?? []), distributors: await ids("distributors", spec.distributors), status: "submitted",
+    verified_at: spec.verified ? new Date().toISOString() : null,
+  }).select("id").single();
+  await db.from("broker_contacts").insert({ listing_id: l!.id, name: "Fixture Contact", title: "Principal", email: spec.email, phone: "312-555-0199" });
+  await db.from("broker_states").insert(spec.states.map((s) => ({ listing_id: l!.id, state_code: s })));
+  const rids = await ids("retailers", spec.retailers.map((r) => r[0]));
+  await db.from("broker_retailers").insert(spec.retailers.map((r, i) => ({ listing_id: l!.id, retailer_id: rids[i], call_frequency: r[1] })));
+  await db.from("subscriptions").insert({ org_id: org!.id, comped: true });
+  const { data: st } = await db.rpc("sync_listing_status", { p_org: org!.id });
+  if (st !== "live") throw new Error(`fixture not live: ${st}`);
+  return { orgId: org!.id as string, listingId: l!.id as string, slug };
+}

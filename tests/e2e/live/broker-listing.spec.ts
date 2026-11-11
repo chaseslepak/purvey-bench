@@ -5,7 +5,7 @@ import { admin, anon, cleanup, deliverStripeEvent, made, pdf, signUpAndOnboard, 
 /**
  * Acceptance test 1 (Phase 2 part): a broker signs up, builds a listing,
  * pays through Stripe test mode and becomes visible to brands.
- * (The /find check is added with Phase 3.)
+ * 
  */
 test.describe("broker listing and billing (live)", () => {
   skipUnlessLive();
@@ -109,6 +109,18 @@ test.describe("broker listing and billing (live)", () => {
     expect(Date.now() - started).toBeLessThan(60_000); // "appears within a minute"
     const { data: visible } = await anon().from("broker_listings").select("id").eq("org_id", orgId);
     expect(visible).toHaveLength(1);
+    // Acceptance 1: appears in /find (signed out) within a minute of paying.
+    const anonCtx = await page.context().browser()!.newContext();
+    const anonPage = await anonCtx.newPage();
+    await anonPage.goto(`${baseURL}/find?state=IL`);
+    await expect(anonPage.locator(".bench-lcard_name", { hasText: orgName })).toBeVisible();
+    await anonCtx.close();
+    expect(Date.now() - started).toBeLessThan(60_000);
+    // Analytics page is reachable and accessible.
+    await page.goto("/app/analytics");
+    await expect(page.getByRole("heading", { name: "Analytics" })).toBeVisible();
+    const axeA = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).exclude(".section_joinus").analyze();
+    expect(axeA.violations.map((v) => v.id), "axe on analytics").toEqual([]);
 
     // Idempotent and signature-checked.
     const dup = await fetch(`${baseURL}/api/stripe/webhook`, { method: "POST", headers: { "stripe-signature": created.header, "content-type": "application/json" }, body: created.payload });

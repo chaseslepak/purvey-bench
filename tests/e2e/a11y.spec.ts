@@ -2,7 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 /** WCAG 2.1 AA checks on every public page, plus keyboard reachability of the nav. */
-const PAGES = ["/", "/for-brokers", "/pricing", "/sign-in", "/sign-up", "/terms", "/privacy"];
+const PAGES = ["/", "/find", "/for-brokers", "/pricing", "/sign-in", "/sign-up", "/terms", "/privacy"];
 
 for (const path of PAGES) {
   test(`no accessibility violations on ${path}`, async ({ page }) => {
