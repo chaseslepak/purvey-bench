@@ -7,6 +7,7 @@ export type Composed = { subject: string; html: string; text: string; headers: R
 type P = Record<string, unknown>;
 const s = (v: unknown) => (v == null ? "" : String(v));
 
+const STAGE: Record<string, string> = { targeted: "Targeted", pitched: "Pitched", samples_sent: "Samples sent", category_review: "Category review", authorized: "Authorized", on_shelf: "On shelf" };
 const DECLINE: Record<string, string> = { not_a_fit: "Not a fit", category_conflict: "Category conflict", not_taking_new_lines: "Not taking new lines", other: "Other" };
 
 /** Turn an outbox row into a finished email (subject, HTML, plain text, List-Unsubscribe). */
@@ -75,6 +76,36 @@ export async function composeEmail(kind: Kind, payload: P, ctx: { appUrl: string
       cta = { label: kind === "digest" ? "Open your inbox" : "Open admin", href: `${ctx.appUrl}${kind === "digest" ? "/app/inbox" : "/admin"}` };
       break;
     }
+    case "deal_update":
+      subject = `${s(payload.from_org)}: ${s(payload.account)} update`;
+      heading = `${s(payload.account)} moved to ${STAGE[s(payload.to_stage)] ?? s(payload.to_stage)}`;
+      paragraphs = [`“${s(payload.excerpt)}”`];
+      cta = { label: "See progress", href: `${thread(payload.conversation_id)}/progress` };
+      break;
+    case "true_up_report":
+      subject = `${s(payload.from_org)} uploaded ${s(payload.period)} sales`;
+      heading = `${s(payload.period)} sales are in`;
+      paragraphs = ["Review the accounts, add any adjustments and send your invoice. Payment happens outside Bench."];
+      cta = { label: "Review and invoice", href: `${thread(payload.conversation_id)}/commissions` };
+      break;
+    case "true_up_invoiced":
+      subject = `Invoice ${s(payload.invoice_no)} from ${s(payload.from_org)}`;
+      heading = `Commission invoice for ${s(payload.period)}`;
+      paragraphs = [`Total due: $${Number(payload.total ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}.`, "Pay outside Bench (ACH or check), then mark it paid so both sides have the same record."];
+      cta = { label: "View the invoice", href: `${thread(payload.conversation_id)}/commissions` };
+      break;
+    case "true_up_questioned":
+      subject = `${s(payload.from_org)} has a question about invoice ${s(payload.invoice_no)}`;
+      heading = "A question about your invoice";
+      paragraphs = [`“${s(payload.note)}”`, "Revise the invoice or reply in Messages."];
+      cta = { label: "Open commissions", href: `${thread(payload.conversation_id)}/commissions` };
+      break;
+    case "true_up_paid":
+      subject = `${s(payload.from_org)} marked invoice ${s(payload.invoice_no)} paid`;
+      heading = "Invoice marked paid";
+      paragraphs = [`${s(payload.from_org)} recorded payment for ${s(payload.period)}. Check your bank for the deposit.`];
+      cta = { label: "Open commissions", href: `${thread(payload.conversation_id)}/commissions` };
+      break;
     case "weekly_summary":
       subject = "Your week on Purvey Bench"; heading = "Your week";
       paragraphs = [`Shown in search ${s(payload.impressions)} times · ${s(payload.views)} profile views · ${s(payload.reveals)} contact reveals · ${s(payload.conversations)} new conversations.`];

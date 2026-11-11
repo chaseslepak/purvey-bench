@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { ConversationHeader } from "@/components/inbox/ConversationHeader";
 import { notFound, redirect } from "next/navigation";
 import { Thread, type Msg } from "./Thread";
 import { BRAND_STAGES, BROKER_STAGES } from "@/lib/inbox/load";
@@ -39,12 +39,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
 
   return (
     <>
-      <section className="bench-section is-cream bench-stack" style={{ gap: 8 }}>
-        <div className="text_title"><Link className="bench-link" href="/app/inbox">Inbox</Link></div>
-        <h1 className="bench-h-section" style={{ margin: 0 }}>
-          {amBrand && other ? <Link href={`/brokers/${other.slug}`} style={{ color: "inherit" }}>{other.name}</Link> : other?.name ?? "Conversation"}
-        </h1>
-      </section>
+      <ConversationHeader id={c.id} title={other?.name ?? "Conversation"} href={amBrand && other ? `/brokers/${other.slug}` : null} active="" />
       <Thread
         conversationId={c.id}
         myOrgId={session.org.id}

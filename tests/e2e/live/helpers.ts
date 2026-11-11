@@ -53,11 +53,13 @@ export async function cleanup(m: Made) {
     for (const id of m.customers) await s.customers.del(id).catch(() => {});
   }
   for (const orgId of m.orgIds) {
-    // Message attachments live under each conversation's folder.
+    // Message attachments and toolbox files live under each conversation's folder.
     const { data: convs } = await db.from("conversations").select("id").or(`brand_org_id.eq.${orgId},broker_org_id.eq.${orgId}`);
     for (const c of convs ?? []) {
-      const { data: files } = await db.storage.from("message-files").list(c.id);
-      if (files?.length) await db.storage.from("message-files").remove(files.map((f) => `${c.id}/${f.name}`));
+      for (const bucket of ["message-files", "toolbox"]) {
+        const { data: files } = await db.storage.from(bucket).list(c.id);
+        if (files?.length) await db.storage.from(bucket).remove(files.map((f) => `${c.id}/${f.name}`));
+      }
     }
     const { data: logos } = await db.storage.from("logos").list(orgId);
     if (logos?.length) await db.storage.from("logos").remove(logos.map((o) => `${orgId}/${o.name}`));
