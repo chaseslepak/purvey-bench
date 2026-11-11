@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { preload } from "react-dom";
 import { Comparison } from "@/components/site/Comparison";
 import { CtaBand } from "@/components/site/CtaBand";
 import { HowItWorks } from "@/components/site/HowItWorks";
@@ -7,9 +8,13 @@ import { loadCoverage } from "@/lib/market";
 
 export const revalidate = 3600;
 
+const HERO_SIZES = "(max-width: 1402px) 100vw, 1402px";
 const HERO_IMG = "https://cdn.prod.website-files.com/69bdcd2f869a6d3500f34c17/6a565ac46229979185792b63_ChatGPT%20Image%20Jul%2014%2C%202026%2C%2011_41_01%20AM";
+const HERO_SRCSET = `${HERO_IMG}-p-500.jpg 500w, ${HERO_IMG}-p-800.jpg 800w, ${HERO_IMG}-p-1080.jpg 1080w, ${HERO_IMG}.jpg 1402w`;
 
 export default async function Home() {
+  // The hero is the largest paint: start fetching it with the HTML, not after the CSS.
+  preload(`${HERO_IMG}.jpg`, { as: "image", fetchPriority: "high", imageSrcSet: HERO_SRCSET, imageSizes: HERO_SIZES });
   const coverage = await loadCoverage(30);
   return (
     <>
@@ -17,8 +22,8 @@ export default async function Home() {
         {/* eslint-disable-next-line @next/next/no-img-element -- same responsive image markup as the live site */}
         <img
           src={`${HERO_IMG}.jpg`}
-          srcSet={`${HERO_IMG}-p-500.jpg 500w, ${HERO_IMG}-p-800.jpg 800w, ${HERO_IMG}-p-1080.jpg 1080w, ${HERO_IMG}.jpg 1402w`}
-          sizes="(max-width: 1402px) 100vw, 1402px"
+          srcSet={HERO_SRCSET}
+          sizes={HERO_SIZES}
           alt=""
           className="img"
           fetchPriority="high"

@@ -32,6 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className="w-mod-js" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: EMBED_DETECT }} />
+        <link rel="preconnect" href="https://cdn.prod.website-files.com" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         {/* Same families and weights the live Webflow site loads. */}
