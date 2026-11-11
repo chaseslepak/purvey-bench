@@ -42,3 +42,12 @@ export async function loadListingBySlug(slug: string): Promise<ListingRow | null
   return data ? toRow(data as unknown as Raw) : null;
 }
 
+
+export type Rating = { average: number; count: number };
+/** Average star rating and review count per listing (display only, never used for ranking). */
+export async function loadRatings(ids: string[]): Promise<Map<string, Rating>> {
+  if (!ids.length) return new Map();
+  const db = await createClient();
+  const { data } = await db.rpc("listing_ratings", { p_listings: ids });
+  return new Map(((data ?? []) as { listing_id: string; average: number; reviews: number }[]).map((r) => [r.listing_id, { average: Number(r.average), count: Number(r.reviews) }]));
+}

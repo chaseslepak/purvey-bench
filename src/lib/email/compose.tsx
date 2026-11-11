@@ -112,6 +112,12 @@ export async function composeEmail(kind: Kind, payload: P, ctx: { appUrl: string
       paragraphs = [`${s(payload.by) || "A teammate"} assigned you the conversation with ${s(payload.other)} on Purvey Bench.`];
       cta = { label: "Open the conversation", href: thread(payload.conversation_id) };
       break;
+    case "review_received":
+      subject = `A brand left you a ${s(payload.rating)}-star review on Purvey Bench`;
+      heading = "You have a new review";
+      paragraphs = [payload.title ? `“${s(payload.title)}”` : "A brand you worked with on Bench reviewed you.", "You can reply publicly, or flag it for Purvey if something's wrong."];
+      cta = { label: "See your reviews", href: `${ctx.appUrl}/app/reviews` };
+      break;
     case "team_invite":
       subject = `${s(payload.inviter) || "A teammate"} invited you to ${s(payload.org)} on Purvey Bench`;
       heading = `Join ${s(payload.org)} on Purvey Bench`;
@@ -134,6 +140,8 @@ export async function composeEmail(kind: Kind, payload: P, ctx: { appUrl: string
         admin_verification_requested: `Verification requested: ${s(payload.broker)}`,
         admin_placement_requested: `Placement requested: ${s(payload.brand)} → ${s(payload.broker)}`,
         admin_report_filed: "A report was filed",
+        admin_review_flagged: `Review flagged by ${s(payload.broker)}`,
+        admin_reference_offered: `${s(payload.brand)} offered to be a reference for ${s(payload.broker)}`,
         admin_audit_requested: `Commission audit requested: ${s(payload.brand)} / ${s(payload.broker)}`,
       };
       subject = what[kind] ?? "Purvey Bench notification";

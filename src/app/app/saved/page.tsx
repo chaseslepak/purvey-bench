@@ -6,7 +6,7 @@ import { ListingCard } from "@/components/listing/ListingCard";
 import { SaveButton } from "@/components/brand/SaveButton";
 import { getReference } from "@/lib/reference";
 import { cardData } from "@/lib/search";
-import { loadLiveListings } from "@/lib/search-data";
+import { loadLiveListings, loadRatings } from "@/lib/search-data";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -26,6 +26,7 @@ export default async function Saved({ searchParams }: { searchParams: Promise<{ 
   const byId = new Map(all.map((l) => [l.id, l]));
   const folders = [...new Set((saved ?? []).map((s) => s.folder).filter(Boolean) as string[])].sort();
   const items = (saved ?? []).filter((s) => !folder || s.folder === folder);
+  const ratings = await loadRatings(items.map((s) => s.listing_id as string));
 
   return (
     <>
@@ -55,7 +56,7 @@ export default async function Saved({ searchParams }: { searchParams: Promise<{ 
                 <li key={s.id} className="bench-section bench-stack" style={{ padding: 20 }}>
                   {l ? (
                     <>
-                      <Link href={`/brokers/${l.slug}`} className="bench-result_link"><ListingCard data={cardData({ ...l, fit: null }, ref)} /></Link>
+                      <Link href={`/brokers/${l.slug}`} className="bench-result_link"><ListingCard data={cardData({ ...l, fit: null }, ref, null, ratings.get(l.id))} /></Link>
                       <div className="bench-row" style={{ justifyContent: "space-between" }}>
                         <label className="bench-row bench-small" style={{ gap: 8 }}><input type="checkbox" name="ids" value={l.id} /> Compare</label>
                         <SaveButton listingId={l.id} name={l.name} initial signedIn isBrand next="/app/saved" />

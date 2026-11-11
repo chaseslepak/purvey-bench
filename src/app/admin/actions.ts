@@ -168,3 +168,24 @@ export async function mergeListItem(f: FormData) {
   if (error) back(to, { err: friendly(error.message) });
   back(to, { ok: "Merged. Listings, briefs and brand profiles now point to the kept item." });
 }
+
+/* ---------- Reviews and brand references ---------- */
+export async function setReviewHidden(f: FormData) {
+  const { db } = await requireAdmin();
+  const id = uuid.parse(str(f, "reviewId"));
+  // Two submit buttons can both set "hidden"; the last value wins.
+  const hidden = f.getAll("hidden").map(String).at(-1) === "1";
+  const to = str(f, "back") || "/admin/reviews";
+  const { error } = await db.rpc("admin_set_review_hidden", { p_review: id, p_hidden: hidden, p_reason: str(f, "reason") || null });
+  if (error) back(to, { err: friendly(error.message) });
+  back(to, { ok: hidden ? "Review hidden. It no longer counts toward the rating." : "Review visible." });
+}
+
+export async function updateBrandReference(f: FormData) {
+  const { db } = await requireAdmin();
+  const to = str(f, "back");
+  const status = z.enum(["pending", "reached", "confirmed", "unreachable"]).parse(str(f, "status"));
+  const { error } = await db.rpc("admin_update_brand_reference", { p_ref: uuid.parse(str(f, "refId")), p_status: status, p_notes: str(f, "notes") });
+  if (error) back(to, { err: friendly(error.message) });
+  back(to, { ok: "Brand reference updated." });
+}

@@ -22,6 +22,7 @@ export async function BenchNav() {
           <>
             <Link href="/app/listing" className="bench-subnav_link">Listing</Link>
             <Link href="/app/analytics" className="bench-subnav_link">Analytics</Link>
+            <Link href="/app/reviews" className="bench-subnav_link">Reviews</Link>
           </>
         )}
         {!session && (

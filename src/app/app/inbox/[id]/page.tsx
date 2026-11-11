@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ConversationHeader } from "@/components/inbox/ConversationHeader";
 import { notFound, redirect } from "next/navigation";
 import { Thread, type Msg } from "./Thread";
@@ -36,10 +37,25 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
   });
   const people = Object.fromEntries(teammates.map((t) => [t.id, t.name]));
   const other = (amBrand ? c.broker : c.brand) as unknown as { name: string; slug: string } | null;
+  // Once the broker has replied, invite the brand to review them (only if it hasn't yet).
+  let reviewPrompt = false;
+  if (amBrand && other) {
+    const brokerReplied = (msgs.data ?? []).some((m) => m.sender_org_id === c.broker_org_id && !m.is_auto_reply);
+    if (brokerReplied) {
+      const { data: l } = await db.from("broker_listings").select("id").eq("org_id", c.broker_org_id).maybeSingle();
+      const { data: rv } = l ? await db.from("broker_reviews").select("id").eq("listing_id", l.id).eq("brand_org_id", session.org.id).maybeSingle() : { data: { id: "" } };
+      reviewPrompt = !!l && !rv;
+    }
+  }
 
   return (
     <>
       <ConversationHeader id={c.id} title={other?.name ?? "Conversation"} href={amBrand && other ? `/brokers/${other.slug}` : null} active="" />
+      {reviewPrompt && other && (
+        <p className="bench-notice bench-small" style={{ margin: 0 }}>
+          Worked with {other.name}? <Link className="bench-link" href={`/brokers/${other.slug}#reviews`}>Rate and review them</Link> to help other brands, or offer to be a reference.
+        </p>
+      )}
       <Thread
         conversationId={c.id}
         myOrgId={session.org.id}
