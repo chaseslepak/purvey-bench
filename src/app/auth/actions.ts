@@ -13,6 +13,12 @@ export type AuthFormState = { error?: string; fieldErrors?: Record<string, strin
 
 const email = z.string().trim().toLowerCase().email("Enter a valid email address.");
 
+/** Onboarding, carrying a same-site "next" so people land where they were headed. */
+function onboardingPath(next: FormDataEntryValue | null) {
+  const n = typeof next === "string" ? safeNext(next, "") : "";
+  return n.startsWith("/") ? `/app/onboarding?next=${encodeURIComponent(n)}` : "/app/onboarding";
+}
+
 async function confirmUrl(next: string) {
   return `${await requestOrigin()}/auth/confirm?next=${encodeURIComponent(next)}`;
 }
@@ -39,7 +45,7 @@ export async function sendSignInLink(_prev: AuthFormState, form: FormData): Prom
   if (error && !/signups not allowed|user not found/i.test(error.message)) {
     return { error: "We couldn't send the link. Please try again in a minute." };
   }
-  redirect(`/auth/check-email?email=${encodeURIComponent(parsed.data.email)}`);
+  redirect(`/auth/check-email?from=sign-in&email=${encodeURIComponent(parsed.data.email)}`);
 }
 
 const signUpSchema = z.object({
@@ -76,7 +82,7 @@ export async function signUp(_prev: AuthFormState, form: FormData): Promise<Auth
     email: parsed.data.email,
     options: {
       shouldCreateUser: true,
-      emailRedirectTo: await confirmUrl("/app/onboarding"),
+      emailRedirectTo: await confirmUrl(onboardingPath(form.get("next"))),
       // Prefills onboarding; the organization is created there by create_organization().
       data: {
         name: parsed.data.name,

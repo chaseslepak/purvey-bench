@@ -34,7 +34,7 @@ export function ListingCard({ data, headingLevel = 3 }: { data: ListingCardData;
           <p className="bench-small bench-muted">{[data.hq, data.coverage].filter(Boolean).join(" · ")}</p>
           {data.rating && <div className="bench-small"><RatingSummary average={data.rating.average} count={data.rating.count} compact /></div>}
         </div>
-        {data.fit && <div className="bench-lcard_fit" title="Fit to your brief"><b>{data.fit.score}</b><span>fit</span></div>}
+        {data.fit && <div className="bench-lcard_fit" title="Fit to your brief"><b aria-hidden="true">{data.fit.score}</b><span aria-hidden="true">fit</span><span className="bench-sr-only">Fit score {data.fit.score} of 100</span></div>}
       </div>
       <div className="bench-row" style={{ gap: 6 }}>
         {data.verified && <span className="bench-tag is-blue">Verified</span>}

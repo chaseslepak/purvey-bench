@@ -8,7 +8,7 @@ export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "For brokers",
-  description: "List your brokerage on Purvey Bench for $100 a month, flat. Brands find you by the retailers you actually call on.",
+  description: "List your brokerage on Purvey Bench for $100 a month, or $900 a year (25% off) for early access brokerages. Brands find you by the retailers you actually call on.",
 };
 
 const INCLUDED = [

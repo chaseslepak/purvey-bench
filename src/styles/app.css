@@ -87,7 +87,19 @@ textarea:focus-visible, summary:focus-visible, [role="button"]:focus-visible {
   font-size: 0.875rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase;
   color: var(--pv-ink); text-decoration: none; padding: 12px;
 }
-.bench-subnav_link[aria-current="page"] { color: var(--pv-blue); }
+.bench-subnav_link[aria-current="page"] { color: var(--pv-blue); box-shadow: inset 0 -2px 0 var(--pv-blue); }
+.bench-subnav_link:hover { color: var(--pv-blue); }
+.bench-subnav_toggle { display: none; }
+@media screen and (max-width: 767px) {
+  .bench-subnav_toggle {
+    display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px; border: 1px solid var(--pv-line); border-radius: var(--pv-radius-button);
+    background: var(--pv-white); font: 500 0.875rem/1 var(--pv-font-body); letter-spacing: 0.1em; text-transform: uppercase; color: var(--pv-ink); cursor: pointer;
+  }
+  .bench-subnav_links { display: none; width: 100%; flex-direction: column; align-items: stretch; gap: 0; padding-top: 4px; border-top: 1px solid var(--pv-line-soft); }
+  .bench-subnav_links.is-open { display: flex; }
+  .bench-subnav_links .bench-subnav_link { display: block; padding: 14px 8px; text-align: left; width: 100%; }
+  .bench-subnav_links .button { margin: 8px 0; text-align: center; }
+}
 
 /* ---------- Forms ---------- */
 .bench-form { display: flex; flex-direction: column; gap: 20px; }
@@ -264,6 +276,13 @@ html[data-embed="1"] .section_hero { height: 640px; }
 .bench-find { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: var(--pv-gap); align-items: start; }
 @media screen and (max-width: 991px) { .bench-find { grid-template-columns: 1fr; } }
 .bench-find_filters { padding: 24px; gap: 14px; }
+.bench-find_toggle { display: none; }
+@media screen and (max-width: 991px) {
+  .bench-find_filters { padding: 8px 16px; gap: 0; }
+  .bench-find_toggle { display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 48px; background: none; border: 0; padding: 0; font: 500 0.875rem/1 var(--pv-font-body); letter-spacing: 0.1em; text-transform: uppercase; color: var(--pv-ink); cursor: pointer; }
+  .bench-find_body:not(.is-open) { display: none; }
+  .bench-find_body.is-open { padding: 8px 0 16px; }
+}
 .bench-results { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--pv-gap); }
 @media screen and (max-width: 767px) { .bench-results { grid-template-columns: 1fr; } }
 .bench-result { position: relative; display: flex; flex-direction: column; }
@@ -350,3 +369,28 @@ a.bench-market_item:hover { border-color: var(--pv-ink); }
 .bench-starinput_star { cursor: pointer; font-size: 2rem; line-height: 1; color: var(--pv-line); padding: 0 2px; border-radius: 6px; }
 .bench-starinput_star.is-on { color: var(--pv-ink); }
 .bench-starinput_star:has(input:focus-visible) { outline: 0.125rem solid #4d65ff; outline-offset: 2px; }
+.bench-todo .bench-link-btn { text-align: left; }
+.bench-tabs.is-steps a { padding: 12px 14px; }
+
+/* ---------- Plans (broker paywall) ---------- */
+.bench-plan.is-best { box-shadow: inset 0 0 0 2px var(--pv-blue); }
+.bench-price_per { font-size: 1.5rem; }
+.bench-checklist { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.bench-checklist li { position: relative; padding-left: 28px; }
+.bench-checklist li::before { content: ""; position: absolute; left: 4px; top: 0.35em; width: 12px; height: 7px; border-left: 2px solid var(--pv-blue); border-bottom: 2px solid var(--pv-blue); transform: rotate(-45deg); }
+/* A value the user typed that isn't on our reference list. */
+.bench-chip.is-own { border-style: dashed; }
+.bench-hint.is-error { color: var(--pv-danger-ink); }
+.bench-h-card { font-family: var(--pv-font-display); font-weight: 400; font-size: 1.375rem; line-height: 1.3; }
+.bench-refcard { border: 1px solid var(--pv-line); border-radius: var(--pv-radius-input); background: var(--pv-white); padding: 20px; margin: 0; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+
+/* Review polish: mobile hero, touch targets, Turnstile slot. */
+@media screen and (max-width: 479px) {
+  .section_hero.bench-hero .heading { font-size: 2.5rem; line-height: 1.1; }
+}
+@media (pointer: coarse) {
+  .bench-chip { min-height: 40px; padding: 9px 16px; }
+}
+.bench-turnstile:empty { display: none; }
+.bench-turnstile { min-height: 65px; }
+.bench-spots { margin: 0; padding: 8px 12px; border-radius: var(--pv-radius-button); background: var(--pv-warn-bg); color: var(--pv-warn-ink); font-size: 0.875rem; }

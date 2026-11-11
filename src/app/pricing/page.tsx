@@ -2,10 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Comparison } from "@/components/site/Comparison";
 import { CtaBand } from "@/components/site/CtaBand";
+import { earlyAccessLeft } from "@/lib/billing/early-access";
 
-export const metadata: Metadata = { title: "Pricing", description: "Brands are free, always. Brokers list for $100 a month, flat." };
+export const metadata: Metadata = { title: "Pricing", description: "Brands are free, always. Brokers list for $100 a month, or $900 a year (25% off) for the first 12 brokerages." };
 
-export default function Pricing() {
+export const revalidate = 60;
+
+export default async function Pricing() {
+  const left = await earlyAccessLeft();
   return (
     <>
       <section className="bench-section is-cream bench-stack">
@@ -21,8 +25,14 @@ export default function Pricing() {
         </div>
         <div className="bench-section bench-stack">
           <div className="bench-eyebrow">Brokers</div>
-          <div className="bench-price">$100<span style={{ fontSize: "1.5rem" }}> / month</span></div>
-          <p className="bench-muted">One flat listing. No tiers, contact caps, lead fees or paid placement. Cancel any time.</p>
+          <div className="bench-price">$100<span className="bench-price_per"> / month</span></div>
+          {left > 0 ? (
+            <>
+              <p className="bench-muted" style={{ margin: 0 }}>Early access: <strong>$900 a year</strong> paid up front, 25% off ($75 a month).</p>
+              <p className="bench-spots">Only {left} early access deal{left === 1 ? "" : "s"} still available.</p>
+            </>
+          ) : <p className="bench-muted" style={{ margin: 0 }}>The early access annual deals have all been claimed.</p>}
+          <p className="bench-muted">One flat listing. No tiers, contact caps, lead fees or paid placement. Choose a plan when you sign up, then build your listing. Cancel any time.</p>
           <div><Link href="/sign-up?role=broker" className="button w-button">Start your listing</Link></div>
         </div>
       </section>

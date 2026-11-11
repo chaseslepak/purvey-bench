@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toggleSave } from "@/app/find/actions";
 
-export function SaveButton({ listingId, name, initial, signedIn, isBrand, next }: { listingId: string; name: string; initial: boolean; signedIn: boolean; isBrand: boolean; next: string }) {
+/** Save or unsave a broker. `remove` mode (the Saved page) says "Remove" and refreshes the list. */
+export function SaveButton({ listingId, name, initial, signedIn, isBrand, next, remove }: { listingId: string; name: string; initial: boolean; signedIn: boolean; isBrand: boolean; next: string; remove?: boolean }) {
+  const router = useRouter();
   const [saved, setSaved] = useState(initial);
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<string | null>(null);
@@ -14,8 +17,8 @@ export function SaveButton({ listingId, name, initial, signedIn, isBrand, next }
     <>
       <button type="button" className="button bench-btn-ghost is-small w-button" aria-pressed={saved} disabled={pending}
         aria-label={saved ? `Remove ${name} from saved` : `Save ${name}`}
-        onClick={() => start(async () => { const r = await toggleSave(listingId); if (r.error) setMsg(r.error); else setSaved(Boolean(r.saved)); })}>
-        {saved ? "Saved" : "Save"}
+        onClick={() => start(async () => { const r = await toggleSave(listingId); if (r.error) setMsg(r.error); else { setSaved(Boolean(r.saved)); if (remove) router.refresh(); } })}>
+        {remove ? (pending ? "Removing…" : "Remove") : saved ? "Saved" : "Save"}
       </button>
       {msg && <span className="bench-error" role="alert">{msg}</span>}
     </>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { deleteTemplate } from "./actions";
+import { ConfirmSubmit } from "@/components/ui/ConfirmSubmit";
 import { AwayForm, NotificationsForm, ProfileForm, TemplateForm } from "./Forms";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -37,7 +38,7 @@ export default async function Settings() {
             {templates.map((t) => (
               <li key={t.id} className="bench-card" style={{ padding: 16 }}>
                 <div className="bench-row" style={{ justifyContent: "space-between" }}><strong>{t.title}</strong>
-                  <form action={deleteTemplate}><input type="hidden" name="id" value={t.id} /><button className="bench-link-btn" type="submit" aria-label={`Delete ${t.title}`}>Delete</button></form>
+                  <form action={deleteTemplate}><input type="hidden" name="id" value={t.id} /><ConfirmSubmit message={`Delete the saved reply "${t.title}"?`} aria-label={`Delete ${t.title}`}>Delete</ConfirmSubmit></form>
                 </div>
                 <p className="bench-small" style={{ margin: "6px 0 0", whiteSpace: "pre-wrap" }}>{t.body}</p>
               </li>

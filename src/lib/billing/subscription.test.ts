@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type Stripe from "stripe";
-import { orgIdFromSubscription, subscriptionIdFromInvoice, subscriptionRow } from "./subscription";
+import { hasListingAccess, orgIdFromSubscription, planOf, subscriptionIdFromInvoice, subscriptionRow } from "./subscription";
 
 const ORG = "11111111-2222-4333-8444-555555555555";
 function sub(over: Partial<Stripe.Subscription> = {}): Stripe.Subscription {
@@ -35,5 +35,25 @@ describe("ids", () => {
   it("finds an invoice's subscription under parent", () => {
     expect(subscriptionIdFromInvoice({ parent: { subscription_details: { subscription: "sub_9" } } } as unknown as Stripe.Invoice)).toBe("sub_9");
     expect(subscriptionIdFromInvoice({ parent: null } as unknown as Stripe.Invoice)).toBeNull();
+  });
+});
+
+describe("plans and access", () => {
+  it("reads the plan from the price interval", () => {
+    const withInterval = (interval: string) => sub({ items: { data: [{ current_period_end: 1, price: { id: "p", recurring: { interval } } }] } } as unknown as Partial<Stripe.Subscription>);
+    expect(planOf(withInterval("year"))).toBe("annual");
+    expect(planOf(withInterval("month"))).toBe("monthly");
+    expect(planOf(sub())).toBeNull();
+  });
+  it("gives access only to paid, comped or still-in-period brokers", () => {
+    const now = new Date("2027-01-01T00:00:00Z");
+    expect(hasListingAccess(null)).toBe(false);
+    expect(hasListingAccess({ comped: true })).toBe(true);
+    expect(hasListingAccess({ status: "active" })).toBe(true);
+    expect(hasListingAccess({ status: "past_due" })).toBe(true);
+    expect(hasListingAccess({ status: "incomplete" })).toBe(false);
+    expect(hasListingAccess({ status: "canceled", current_period_end: "2027-02-01T00:00:00Z" }, now)).toBe(true);
+    expect(hasListingAccess({ status: "canceled", current_period_end: "2026-12-01T00:00:00Z" }, now)).toBe(false);
+    expect(hasListingAccess({ status: null })).toBe(false);
   });
 });

@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import { Progress, type Account, type Update } from "./Progress";
 import { ConversationHeader } from "@/components/inbox/ConversationHeader";
 import { loadConversation } from "@/lib/inbox/conversation";
+import { beforeAgreement, DEAL_NOTE } from "../deal-stage";
 import { getReference } from "@/lib/reference";
 
 export const metadata: Metadata = { title: "Progress", robots: { index: false } };
 
 export default async function ProgressPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { db, c, amBrand, other, me } = await loadConversation(id);
+  const { session, db, c, amBrand, other, me } = await loadConversation(id);
   const [accts, ups, thanks, ref] = await Promise.all([
     db.from("deal_accounts").select("id, custom_name, stage, stores, covered, retailers(name)").eq("conversation_id", c.id).order("created_at"),
     db.from("deal_updates").select("id, account_id, from_stage, to_stage, note, next_step, due_date, created_at").eq("conversation_id", c.id).order("created_at", { ascending: false }),
@@ -24,7 +25,7 @@ export default async function ProgressPage({ params }: { params: Promise<{ id: s
   }));
   return (
     <>
-      <ConversationHeader id={c.id} title={other?.name ?? "Conversation"} href={amBrand && other ? `/brokers/${other.slug}` : null} active="progress" />
+      <ConversationHeader id={c.id} title={other?.name ?? "Conversation"} href={amBrand && other ? `/brokers/${other.slug}` : null} isBrand={amBrand} active="progress" note={(await beforeAgreement(db, c.id, session.org!.id, amBrand)) ? DEAL_NOTE : null} />
       <Progress id={c.id} isBroker={!amBrand} otherName={other?.name ?? "the other side"} accounts={accounts} updates={updates} retailers={ref.retailers} />
     </>
   );

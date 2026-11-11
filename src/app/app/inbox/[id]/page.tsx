@@ -50,7 +50,7 @@ export default async function ConversationPage({ params }: { params: Promise<{ i
 
   return (
     <>
-      <ConversationHeader id={c.id} title={other?.name ?? "Conversation"} href={amBrand && other ? `/brokers/${other.slug}` : null} active="" />
+      <ConversationHeader id={c.id} title={other?.name ?? "Conversation"} href={amBrand && other ? `/brokers/${other.slug}` : null} isBrand={amBrand} active="" />
       {reviewPrompt && other && (
         <p className="bench-notice bench-small" style={{ margin: 0 }}>
           Worked with {other.name}? <Link className="bench-link" href={`/brokers/${other.slug}#reviews`}>Rate and review them</Link> to help other brands, or offer to be a reference.

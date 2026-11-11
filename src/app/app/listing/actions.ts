@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { stripe, stripeConfigured, listingPriceId } from "@/lib/billing/stripe";
+import { PLANS, type Plan, stripe, stripeConfigured, listingPriceId } from "@/lib/billing/stripe";
+import { earlyAccessLeft } from "@/lib/billing/early-access";
+import { hasListingAccess } from "@/lib/billing/subscription";
 import { requestOrigin } from "@/lib/origin";
 import { getSession } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -26,6 +28,7 @@ const optUrl = z
   .pipe(z.union([z.literal(""), z.url("Enter a valid website.")]))
   .transform((v) => v || null);
 const ids = z.array(z.number().int().positive()).max(200);
+const names = z.array(z.string().trim().min(1).max(80).regex(/^[^<>]+$/)).max(20).default([]);
 
 const steps = {
   company: z.object({
@@ -43,6 +46,8 @@ const steps = {
     states: z.array(z.string().regex(/^[A-Z]{2}$/)).max(51),
     channels: ids,
     distributors: ids,
+    otherChannels: names,
+    otherDistributors: names,
   }),
   retailers: z.object({
     rows: z
@@ -54,7 +59,7 @@ const steps = {
       )
       .max(300),
   }),
-  categories: z.object({ categories: ids, conflicts: ids, currentLines: z.string().trim().max(2000).transform((v) => v || null) }),
+  categories: z.object({ categories: ids, conflicts: ids, otherCategories: names, otherConflicts: names, currentLines: z.string().trim().max(2000).transform((v) => v || null) }),
   terms: z
     .object({
       model: z.union([z.literal(""), z.enum(["pct_net_sales", "retainer_plus_pct", "retainer_only"])]).transform((v) => v || null),
@@ -70,7 +75,7 @@ const steps = {
     merchandisers: optInt(0, 100000),
     references: z
       .array(z.object({ name: optText(120), brand: optText(120), email: optEmail, phone: optText(40) }))
-      .max(2),
+      .max(5),
   }),
 } as const;
 
@@ -118,7 +123,7 @@ export async function saveStep(step: StepName, payload: unknown): Promise<SaveRe
       const c = parsed.data as z.infer<typeof steps.coverage>;
       const e1 = (await db.rpc("save_listing_states", { p_listing: listing.id, p_states: c.states })).error;
       if (e1) return fail(e1)!;
-      const e2 = (await db.from("broker_listings").update({ channels: c.channels, distributors: c.distributors }).eq("id", listing.id)).error;
+      const e2 = (await db.from("broker_listings").update({ channels: c.channels, distributors: c.distributors, other_channels: c.otherChannels, other_distributors: c.otherDistributors }).eq("id", listing.id)).error;
       if (e2) return fail(e2)!;
       break;
     }
@@ -131,7 +136,7 @@ export async function saveStep(step: StepName, payload: unknown): Promise<SaveRe
     }
     case "categories": {
       const c = parsed.data as z.infer<typeof steps.categories>;
-      const e = (await db.from("broker_listings").update({ categories: c.categories, conflicts: c.conflicts, current_lines: c.currentLines }).eq("id", listing.id)).error;
+      const e = (await db.from("broker_listings").update({ categories: c.categories, conflicts: c.conflicts, other_categories: c.otherCategories, other_conflicts: c.otherConflicts, current_lines: c.currentLines }).eq("id", listing.id)).error;
       if (e) return fail(e)!;
       break;
     }
@@ -254,42 +259,48 @@ export async function requestVerification(): Promise<{ ok: boolean; error?: stri
   return { ok: true };
 }
 
-/**
- * Submit the listing and, unless it's already paid for or comped, open
- * Stripe Checkout for the $100/month Bench Listing. The client navigates the
- * TOP window to the returned URL so Checkout never loads inside the iframe.
- */
-export async function submitAndCheckout(): Promise<{ ok: true; checkoutUrl?: string } | { ok: false; error: string }> {
+/** Publish the listing. Brokers pay before building, so this goes straight live. */
+export async function publishListing(): Promise<{ ok: true } | { ok: false; error: string }> {
   const { session, db, listing } = await context();
-  if (session.org!.memberRole !== "owner") return { ok: false, error: "Only an owner can submit the listing and start billing." };
+  if (session.org!.memberRole !== "owner") return { ok: false, error: "Only an owner can publish the listing." };
+  const { data: sub } = await db.from("subscriptions").select("status, comped, current_period_end").eq("org_id", listing.org_id).maybeSingle();
+  if (!hasListingAccess(sub)) return { ok: false, error: "Choose a plan first." };
   const { error } = await db.rpc("submit_listing");
   if (error) return { ok: false, error: error.message.replace(/^.*?: /, "") };
+  revalidatePath("/app/listing");
+  return { ok: true };
+}
 
-  const { data: sub } = await db.from("subscriptions").select("status, comped, stripe_customer_id").eq("org_id", listing.org_id).maybeSingle();
-  if (sub?.comped || ["active", "trialing", "past_due"].includes(sub?.status ?? "")) {
-    revalidatePath("/app/listing");
-    return { ok: true };
-  }
-  if (!stripeConfigured()) return { ok: false, error: "Billing isn't configured in this environment yet." };
-
+/**
+ * Open Stripe Checkout for the chosen plan. Brokers pay before they can build
+ * their listing. The client navigates the TOP window to the returned URL so
+ * Checkout never loads inside the purveycpg.com iframe.
+ */
+export async function startCheckout(plan: Plan): Promise<{ ok: true; checkoutUrl?: string } | { ok: false; error: string }> {
+  if (!(plan in PLANS)) return { ok: false, error: "Choose a plan." };
+  const session = await getSession();
+  if (!session?.org || session.org.type !== "broker") return { ok: false, error: "Only brokerages subscribe." };
+  if (session.org.memberRole !== "owner") return { ok: false, error: "Only an owner can start billing." };
+  const orgId = session.org.id;
   const admin = createAdminClient();
+  const { data: sub } = await admin.from("subscriptions").select("status, comped, current_period_end, stripe_customer_id").eq("org_id", orgId).maybeSingle();
+  if (hasListingAccess(sub)) return { ok: true };
+  if (!stripeConfigured()) return { ok: false, error: "Billing isn't configured in this environment yet." };
+  if (plan === "annual" && (await earlyAccessLeft()) <= 0) return { ok: false, error: "The early access annual deals are all taken. The monthly plan is still available." };
+
   let customer = sub?.stripe_customer_id ?? null;
   if (!customer) {
-    const c = await stripe().customers.create({
-      name: session.org!.name,
-      email: session.email,
-      metadata: { org_id: listing.org_id, app: "purvey-bench" },
-    });
+    const c = await stripe().customers.create({ name: session.org.name, email: session.email, metadata: { org_id: orgId, app: "purvey-bench" } });
     customer = c.id;
-    await admin.from("subscriptions").upsert({ org_id: listing.org_id, stripe_customer_id: customer }, { onConflict: "org_id" });
+    await admin.from("subscriptions").upsert({ org_id: orgId, stripe_customer_id: customer }, { onConflict: "org_id" });
   }
   const origin = await requestOrigin();
   const checkout = await stripe().checkout.sessions.create({
     mode: "subscription",
     customer,
-    client_reference_id: listing.org_id,
-    line_items: [{ price: await listingPriceId(), quantity: 1 }],
-    subscription_data: { metadata: { org_id: listing.org_id } },
+    client_reference_id: orgId,
+    line_items: [{ price: await listingPriceId(plan), quantity: 1 }],
+    subscription_data: { metadata: { org_id: orgId, plan } },
     allow_promotion_codes: false,
     success_url: `${origin}/app/listing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/app/listing?checkout=cancelled`,

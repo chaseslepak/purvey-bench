@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { coverageSummary, FREQ_LABEL, topRetailers } from "@/lib/coverage";
+import { loadBrand } from "@/lib/brand-data";
+import { profileToFit } from "@/lib/brand-profile";
 import { fitScore } from "@/lib/fit";
 import { getReference } from "@/lib/reference";
 import { briefToFit, type BriefRow } from "@/lib/search";
@@ -19,18 +21,22 @@ export default async function Compare({ searchParams }: { searchParams: Promise<
   const [all, ref] = await Promise.all([loadLiveListings(), getReference()]);
   const db = await createClient();
   const { data: brief } = await db.from("briefs").select("*").is("archived_at", null).order("updated_at", { ascending: false }).limit(1).maybeSingle();
-  const fitBrief = brief ? briefToFit(brief as BriefRow, ref) : null;
+  // Same ranking source as Find: the latest brief, or the brand profile's goals when there's no brief.
+  const profile = brief ? null : await loadBrand(db, session.org.id);
+  const fitBrief = brief ? briefToFit(brief as BriefRow, ref) : profile ? profileToFit(profile.profile, ref.states) : null;
+  const fitLabel = brief ? `Fit to “${(brief as BriefRow).title}”` : "Fit to your brand profile";
   const cols = ids.map((id) => all.find((l) => l.id === id)).filter(Boolean) as typeof all;
   const names = (list: { id: number; name: string }[], xs: number[]) => xs.map((i) => list.find((x) => x.id === i)?.name).filter(Boolean).join(", ") || "—";
+  const withOther = (s: string, more?: string[]) => [s === "—" ? "" : s, ...(more ?? [])].filter(Boolean).join(", ") || "—";
   const rows: [string, (l: (typeof cols)[number]) => string][] = [
-    ...(fitBrief ? [[`Fit to “${(brief as BriefRow).title}”`, (l: (typeof cols)[number]) => String(fitScore(fitBrief, l)?.score ?? "—")] as [string, (l: (typeof cols)[number]) => string]] : []),
+    ...(fitBrief ? [[fitLabel, (l: (typeof cols)[number]) => String(fitScore(fitBrief, l)?.score ?? "—")] as [string, (l: (typeof cols)[number]) => string]] : []),
     ["HQ", (l) => l.hq ?? "—"],
     ["Coverage", (l) => coverageSummary(l.states, ref.states, ref.regions)],
     ["Top retailers", (l) => topRetailers(l.retailers).map((r) => `${r.name} (${FREQ_LABEL[r.freq].toLowerCase()})`).join(", ") || "—"],
-    ["Channels", (l) => names(ref.channels, l.channels)],
-    ["Categories", (l) => names(ref.categories, l.categories)],
-    ["Conflicts", (l) => names(ref.categories, l.conflicts)],
-    ["Distributors", (l) => names(ref.distributors, l.distributors)],
+    ["Channels", (l) => withOther(names(ref.channels, l.channels), l.other?.channels)],
+    ["Categories", (l) => withOther(names(ref.categories, l.categories), l.other?.categories)],
+    ["Conflicts", (l) => withOther(names(ref.categories, l.conflicts), l.other?.conflicts)],
+    ["Distributors", (l) => withOther(names(ref.distributors, l.distributors), l.other?.distributors)],
     ["Verified", (l) => (l.verified ? "Yes" : "No")],
     ["Taking new lines", (l) => (l.notTakingNewLines ? "No" : "Yes")],
   ];

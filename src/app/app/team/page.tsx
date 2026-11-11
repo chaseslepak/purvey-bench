@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ConfirmSubmit } from "@/components/ui/ConfirmSubmit";
 import { redirect } from "next/navigation";
 import { InviteForm } from "./InviteForm";
 import { removeTeammate, revokeInvite, setTeammateRole } from "../actions";
@@ -64,7 +65,7 @@ export default async function Team({ searchParams }: { searchParams: Promise<{ o
                       {(isOwner || me) && !(m.role === "owner" && owners === 1) && (
                         <form action={removeTeammate}>
                           <input type="hidden" name="userId" value={m.user_id} />
-                          <button type="submit" className="bench-link-btn">{me ? "Leave team" : "Remove"}</button>
+                          <ConfirmSubmit message={me ? "Leave this team? You'll lose access to its inbox and deals until someone invites you again." : `Remove ${u.name ?? u.email} from the team? Their assigned conversations become unassigned.`}>{me ? "Leave team" : "Remove"}</ConfirmSubmit>
                         </form>
                       )}
                     </div>
@@ -94,7 +95,7 @@ export default async function Team({ searchParams }: { searchParams: Promise<{ o
                       <td>
                         <form action={revokeInvite}>
                           <input type="hidden" name="inviteId" value={i.id} />
-                          <button type="submit" className="bench-link-btn">Revoke</button>
+                          <ConfirmSubmit message={`Revoke the invite to ${i.email}? Their link will stop working.`}>Revoke</ConfirmSubmit>
                         </form>
                       </td>
                     </tr>

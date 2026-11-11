@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { CompareSubmit } from "./CompareSubmit";
 import { SavedFields } from "./SavedItem";
 import { ListingCard } from "@/components/listing/ListingCard";
 import { SaveButton } from "@/components/brand/SaveButton";
@@ -44,10 +45,11 @@ export default async function Saved({ searchParams }: { searchParams: Promise<{ 
       {items.length === 0 ? (
         <section className="bench-section"><p style={{ margin: 0 }}>Nothing saved yet. <Link className="bench-link" href="/find">Find brokers</Link> and choose Save.</p></section>
       ) : (
-        <form action="/app/saved/compare" method="get" className="bench-stack">
-          <div className="bench-row" style={{ justifyContent: "space-between" }}>
-            <p className="bench-small bench-muted" style={{ margin: 0 }}>Tick up to three brokers to compare.</p>
-            <button type="submit" className="button is-small w-button">Compare selected</button>
+        <div className="bench-stack">
+          {/* Only the Compare checkboxes belong to this form, so Enter in a folder or note never submits it. */}
+          <form id="compare" action="/app/saved/compare" method="get" />
+          <div className="bench-row" style={{ justifyContent: "flex-end" }}>
+            <CompareSubmit form="compare" />
           </div>
           <ul className="bench-results">
             {items.map((s) => {
@@ -58,19 +60,22 @@ export default async function Saved({ searchParams }: { searchParams: Promise<{ 
                     <>
                       <Link href={`/brokers/${l.slug}`} className="bench-result_link"><ListingCard data={cardData({ ...l, fit: null }, ref, null, ratings.get(l.id))} /></Link>
                       <div className="bench-row" style={{ justifyContent: "space-between" }}>
-                        <label className="bench-row bench-small" style={{ gap: 8 }}><input type="checkbox" name="ids" value={l.id} /> Compare</label>
-                        <SaveButton listingId={l.id} name={l.name} initial signedIn isBrand next="/app/saved" />
+                        <label className="bench-row bench-small" style={{ gap: 8 }}><input type="checkbox" form="compare" name="ids" value={l.id} /> Compare</label>
+                        <SaveButton listingId={l.id} name={l.name} initial signedIn isBrand remove next="/app/saved" />
                       </div>
                     </>
                   ) : (
-                    <p className="bench-notice" style={{ margin: 0 }}>This broker is no longer listed.</p>
+                    <div className="bench-row" style={{ justifyContent: "space-between" }}>
+                      <p className="bench-notice" style={{ margin: 0 }}>This broker isn&rsquo;t listed right now.</p>
+                      <SaveButton listingId={s.listing_id} name="this broker" initial signedIn isBrand remove next="/app/saved" />
+                    </div>
                   )}
                   <SavedFields id={s.id} folder={s.folder ?? ""} note={s.note ?? ""} folders={folders} name={l?.name ?? "this broker"} />
                 </li>
               );
             })}
           </ul>
-        </form>
+        </div>
       )}
     </>
   );

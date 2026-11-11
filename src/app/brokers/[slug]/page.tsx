@@ -81,7 +81,7 @@ export default async function BrokerProfile({ params }: { params: Promise<{ slug
             <div className="bench-row" style={{ gap: 6 }}>
               {l.verified && <span className="bench-tag is-blue">Verified by Purvey</span>}
               {l.notTakingNewLines && <span className="bench-tag">Not taking new lines</span>}
-              {nameOf(ref.channels, l.channels).map((c) => <span key={c} className="bench-tag is-mist">{c}</span>)}
+              {[...nameOf(ref.channels, l.channels), ...(l.other?.channels ?? [])].map((c) => <span key={c} className="bench-tag is-mist">{c}</span>)}
             </div>
           </div>
           <div className="bench-row" style={{ alignSelf: "start" }}>
@@ -114,9 +114,9 @@ export default async function BrokerProfile({ params }: { params: Promise<{ slug
           <section className="bench-section" aria-labelledby="det-h">
             <h2 id="det-h" className="bench-h-section" style={{ fontSize: "1.75rem", marginBottom: 16 }}>Details</h2>
             <dl className="bench-dl">
-              <dt>Categories</dt><dd>{nameOf(ref.categories, l.categories).join(", ") || "—"}</dd>
-              {l.conflicts.length > 0 && (<><dt>Can&rsquo;t take on</dt><dd>{nameOf(ref.categories, l.conflicts).join(", ")}</dd></>)}
-              <dt>Distributors</dt><dd>{nameOf(ref.distributors, l.distributors).join(", ") || "—"}</dd>
+              <dt>Categories</dt><dd>{[...nameOf(ref.categories, l.categories), ...(l.other?.categories ?? [])].join(", ") || "—"}</dd>
+              {l.conflicts.length + (l.other?.conflicts.length ?? 0) > 0 && (<><dt>Can&rsquo;t take on</dt><dd>{[...nameOf(ref.categories, l.conflicts), ...(l.other?.conflicts ?? [])].join(", ")}</dd></>)}
+              <dt>Distributors</dt><dd>{[...nameOf(ref.distributors, l.distributors), ...(l.other?.distributors ?? [])].join(", ") || "—"}</dd>
               <dt>Commission</dt><dd>{terms?.commission_model ? `${MODEL[terms.commission_model]}${rate ? ` · ${rate}` : ""}${terms.retainer != null ? ` · $${Number(terms.retainer).toLocaleString("en-US")}/month retainer` : ""}` : "—"}</dd>
               <dt>Minimum term</dt><dd>{terms?.min_term_months != null ? `${terms.min_term_months} months` : "—"}</dd>
               <dt>Years in business</dt><dd>{terms?.years_in_business ?? "—"}</dd>

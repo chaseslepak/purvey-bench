@@ -78,7 +78,11 @@ insert into public.channels (name, slug) values
   ('E-commerce', 'e-commerce'),
   ('Ethnic & Hispanic Grocery', 'ethnic-hispanic-grocery'),
   ('Co-ops', 'co-ops'),
-  ('Limited Assortment', 'limited-assortment')
+  ('Limited Assortment', 'limited-assortment'),
+  ('Hardware', 'hardware'),
+  ('QVC & TV Shopping', 'qvc-tv-shopping'),
+  ('Industrial & Safety', 'industrial-safety'),
+  ('Office & Pantry', 'office-pantry')
 on conflict (slug) do nothing;
 
 insert into public.distributors (name, slug) values

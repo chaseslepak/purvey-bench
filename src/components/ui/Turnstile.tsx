@@ -54,7 +54,7 @@ export function Turnstile({ siteKey, onToken }: { siteKey: string; onToken?: (to
   if (!siteKey) return null;
   return (
     <>
-      <div ref={ref} />
+      <div ref={ref} className="bench-turnstile" />
       <input type="hidden" name="cf-turnstile-response" value={token} />
     </>
   );

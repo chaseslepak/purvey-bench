@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { ListingBuilder, type BuilderInitial } from "./ListingBuilder";
 import type { ChecklistItem } from "./actions";
-import { stripe, stripeConfigured } from "@/lib/billing/stripe";
+import { ChoosePlan } from "./ChoosePlan";
+import { PLANS, type Plan, stripe, stripeConfigured } from "@/lib/billing/stripe";
+import { earlyAccessLeft } from "@/lib/billing/early-access";
+import { hasListingAccess } from "@/lib/billing/subscription";
 import { syncSubscription } from "@/lib/billing/sync";
 import type { Freq } from "@/lib/coverage";
 import { getReference } from "@/lib/reference";
@@ -13,11 +16,11 @@ export const metadata: Metadata = { title: "Your listing", robots: { index: fals
 
 const s = (v: unknown) => (v == null ? "" : String(v));
 
-export default async function ListingPage({ searchParams }: { searchParams: Promise<{ checkout?: string; session_id?: string }> }) {
+export default async function ListingPage({ searchParams }: { searchParams: Promise<{ checkout?: string; session_id?: string; welcome?: string }> }) {
   const session = await getSession();
   if (!session?.org) redirect("/app/onboarding");
   if (session.org.type !== "broker") redirect("/app");
-  const { checkout, session_id } = await searchParams;
+  const { checkout, session_id, welcome } = await searchParams;
 
   // Returning from Stripe Checkout: confirm the session belongs to this org and
   // sync right away, so the listing goes live even before the webhook lands.
@@ -27,18 +30,28 @@ export default async function ListingPage({ searchParams }: { searchParams: Prom
       const cs = await stripe().checkout.sessions.retrieve(session_id);
       if (cs.client_reference_id === session.org.id && cs.status === "complete" && cs.subscription) {
         await syncSubscription(typeof cs.subscription === "string" ? cs.subscription : cs.subscription.id);
-        banner = "Payment received. Your listing is live.";
+        banner = "Payment received. Build your listing below and publish it when it's ready.";
       }
     } catch {
-      banner = "Payment received. Your listing will go live within a minute.";
+      banner = "Payment received. It can take a minute to confirm; refresh if this page still asks for a plan.";
     }
+  } else if (welcome) {
+    banner = "Welcome to Purvey Bench. Your account is ready.";
   } else if (checkout === "cancelled") {
-    banner = "Checkout was cancelled. Your listing is saved; you can go live any time.";
+    banner = "Checkout was cancelled. Nothing was charged.";
   }
 
   const db = await createClient();
   const { data: listing } = await db.from("broker_listings").select("*").eq("org_id", session.org.id).single();
   if (!listing) redirect("/app");
+
+  // Pay first: brokers choose a plan before they can build their listing.
+  const { data: sub } = await db.from("subscriptions").select("status, comped, current_period_end").eq("org_id", session.org.id).maybeSingle();
+  if (!hasListingAccess(sub)) {
+    const left = await earlyAccessLeft();
+    const plans = (Object.keys(PLANS) as Plan[]).filter((k) => k !== "annual" || left > 0).map((key) => ({ key, label: PLANS[key].label, price: PLANS[key].price, per: PLANS[key].per, note: PLANS[key].note }));
+    return <ChoosePlan spotsLeft={left} plans={plans} isOwner={session.org.memberRole === "owner"} lapsed={Boolean(listing.live_since)} banner={banner} />;
+  }
   const [org, contact, states, retailers, references, documents, checklist, display, verification, ref] = await Promise.all([
     db.from("organizations").select("name, website, hq_city, hq_state, logo_url").eq("id", session.org.id).single(),
     db.from("broker_contacts").select("*").eq("listing_id", listing.id).maybeSingle(),
@@ -65,13 +78,13 @@ export default async function ListingPage({ searchParams }: { searchParams: Prom
       about: s(listing.about), logoUrl: org.data?.logo_url ?? null,
       contactName: s(contact.data?.name), contactTitle: s(contact.data?.title), contactEmail: s(contact.data?.email), contactPhone: s(contact.data?.phone),
     },
-    coverage: { states: (states.data ?? []).map((r) => r.state_code as string), channels: listing.channels, distributors: listing.distributors },
+    coverage: { states: (states.data ?? []).map((r) => r.state_code as string), channels: listing.channels, distributors: listing.distributors, otherChannels: listing.other_channels ?? [], otherDistributors: listing.other_distributors ?? [] },
     retailers: (retailers.data ?? []).map((r) => ({
       retailerId: r.retailer_id, customName: r.custom_name,
       name: r.custom_name ?? (r.retailers as unknown as { name: string } | null)?.name ?? "Retailer",
       freq: r.call_frequency as Freq,
     })),
-    categories: { categories: listing.categories, conflicts: listing.conflicts, currentLines: s(listing.current_lines) },
+    categories: { categories: listing.categories, conflicts: listing.conflicts, otherCategories: listing.other_categories ?? [], otherConflicts: listing.other_conflicts ?? [], currentLines: s(listing.current_lines) },
     terms: { model: s(listing.commission_model), rateLow: s(listing.rate_low), rateHigh: s(listing.rate_high), retainer: s(listing.retainer), minTerm: s(listing.min_term_months) },
     proof: {
       years: s(listing.years_in_business), teamSize: s(listing.team_size), merchandisers: s(listing.merchandisers),

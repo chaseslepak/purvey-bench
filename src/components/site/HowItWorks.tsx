@@ -15,8 +15,9 @@ export function HowItWorks() {
         <div className="bench-stack">
           <h3 className="bench-eyebrow">For brokers · $100 a month</h3>
           <ol className="bench-steps" style={{ gridTemplateColumns: "1fr" }}>
+            <li><strong>Choose a plan.</strong> Monthly, or an early access year at 25% off (first 12 brokerages).</li>
             <li><strong>Build your listing.</strong> Retailers with call frequency, states, channels, distributors, categories and terms.</li>
-            <li><strong>Go live.</strong> One flat price. No tiers, no lead fees, no paid placement.</li>
+            <li><strong>Publish.</strong> One flat price. No tiers, no lead fees, no paid placement.</li>
             <li><strong>Hear from brands that fit.</strong> Brands start the conversation; you reply in one managed inbox.</li>
           </ol>
         </div>

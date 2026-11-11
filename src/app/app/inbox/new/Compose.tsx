@@ -18,6 +18,7 @@ export function Compose({ brokerOrgId, brokerName, briefs, needsTurnstile, turns
   const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const [sentId, setSentId] = useState<string | null>(null);
   const ts = useTurnstileReady(needsTurnstile ? turnstileSiteKey : "");
 
   function submit(form: HTMLFormElement) {
@@ -27,15 +28,24 @@ export function Compose({ brokerOrgId, brokerName, briefs, needsTurnstile, turns
       const r = await startConversation({ brokerOrgId, body, briefId: brief || null, turnstile: token });
       if (!r.id) return setError(r.error ?? "Couldn't send your message.");
       if (files.length) {
-        // Files go into the new thread's private folder, then into a follow-up message.
+        // Storage paths are scoped to the conversation, which only exists once the
+        // first message is sent, so files follow as one "Shared N files" message.
         const supabase = createClient();
         const uploaded: Attachment[] = [];
+        const failed: string[] = [];
         for (const f of files) {
           const path = `${r.id}/${crypto.randomUUID()}.${EXT[f.type]}`;
           const { error: e } = await supabase.storage.from("message-files").upload(path, f, { contentType: f.type });
-          if (!e) uploaded.push({ path, name: f.name.slice(0, 200), size: f.size, type: f.type as Attachment["type"] });
+          if (e) failed.push(f.name); else uploaded.push({ path, name: f.name.slice(0, 200), size: f.size, type: f.type as Attachment["type"] });
         }
-        if (uploaded.length) await sendMessage(r.id, "", uploaded);
+        if (uploaded.length) {
+          const sent = await sendMessage(r.id, "", uploaded);
+          if (sent.error) failed.push(...uploaded.map((u) => u.name));
+        }
+        if (failed.length) {
+          setSentId(r.id);
+          return setError(`Your message was sent, but ${failed.length === 1 ? "this file didn't" : "these files didn't"} upload: ${failed.join(", ")}. Open the conversation to attach ${failed.length === 1 ? "it" : "them"} again.`);
+        }
       }
       router.push(`/app/inbox/${r.id}`);
     });
@@ -64,7 +74,11 @@ export function Compose({ brokerOrgId, brokerName, briefs, needsTurnstile, turns
       </div>
       {needsTurnstile && <Turnstile siteKey={turnstileSiteKey} onToken={ts.onToken} />}
       {error && <p className="bench-notice is-error" role="alert" style={{ margin: 0 }}>{error}</p>}
-      <div><button className="button w-button" type="submit" disabled={pending || !ts.ready}>{pending ? "Sending…" : !ts.ready ? "Checking…" : "Send message"}</button></div>
+      {sentId ? (
+        <div><a className="button w-button" href={`/app/inbox/${sentId}`}>Open the conversation</a></div>
+      ) : (
+        <div><button className="button w-button" type="submit" disabled={pending || !ts.ready || !body.trim()}>{pending ? "Sending…" : !ts.ready ? "Checking…" : "Send message"}</button></div>
+      )}
     </form>
   );
 }

@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { ListingCard } from "@/components/listing/ListingCard";
+import { Chips } from "@/components/pickers";
 import { UsTileMap } from "@/components/listing/UsTileMap";
 import { coverageSummary, FREQ_LABEL, topRetailers, type Freq } from "@/lib/coverage";
 import { createClient } from "@/lib/supabase/browser";
 import {
-  attachDocument, attachLogo, deleteDocument, documentLink, requestVerification, saveStep, setDocumentPrivacy, submitAndCheckout,
+  attachDocument, attachLogo, deleteDocument, documentLink, requestVerification, saveStep, setDocumentPrivacy, publishListing,
   type ChecklistItem, type DocRow, type SaveResult, type StepName,
 } from "./actions";
 
@@ -20,9 +21,9 @@ export type BuilderInitial = {
   verification: { status: string; reason: string | null } | null;
   checklist: ChecklistItem[];
   company: { name: string; website: string; hqCity: string; hqState: string; about: string; contactName: string; contactTitle: string; contactEmail: string; contactPhone: string; logoUrl: string | null };
-  coverage: { states: string[]; channels: number[]; distributors: number[] };
+  coverage: { states: string[]; channels: number[]; distributors: number[]; otherChannels: string[]; otherDistributors: string[] };
   retailers: { retailerId: number | null; customName: string | null; name: string; freq: Freq }[];
-  categories: { categories: number[]; conflicts: number[]; currentLines: string };
+  categories: { categories: number[]; conflicts: number[]; otherCategories: string[]; otherConflicts: string[]; currentLines: string };
   terms: { model: string; rateLow: string; rateHigh: string; retainer: string; minTerm: string };
   proof: { years: string; teamSize: string; merchandisers: string; references: { name: string; brand: string; email: string; phone: string }[] };
   documents: DocRow[];
@@ -42,6 +43,8 @@ const STEPS: { key: StepName; label: string }[] = [
   { key: "terms", label: "Terms" },
   { key: "proof", label: "Proof" },
 ];
+
+const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 type Status = { kind: "idle" | "saving" | "saved" | "error"; message?: string };
 
@@ -66,21 +69,14 @@ function useAutosave<T>(step: StepName, value: T, onSaved: (r: SaveResult) => vo
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- save when the value changes
   }, [JSON.stringify(value)]);
+  // Don't let someone close the tab with an edit still waiting to save.
+  useEffect(() => {
+    if (status.kind !== "saving") return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [status.kind]);
   return status;
-}
-
-function Chips({ options, selected, onChange, label }: { options: Ref[]; selected: number[]; onChange: (v: number[]) => void; label: string }) {
-  const set = new Set(selected);
-  return (
-    <div className="bench-chips" role="group" aria-label={label}>
-      {options.map((o) => (
-        <button key={o.id} type="button" className="bench-chip" aria-pressed={set.has(o.id)}
-          onClick={() => onChange(set.has(o.id) ? selected.filter((x) => x !== o.id) : [...selected, o.id])}>
-          {o.name}
-        </button>
-      ))}
-    </div>
-  );
 }
 
 function Field({ id, label, hint, children }: { id: string; label: string; hint?: string; children: React.ReactNode }) {
@@ -94,15 +90,17 @@ function Field({ id, label, hint, children }: { id: string; label: string; hint?
 }
 
 const STATE_COPY: Record<string, { label: string; help: string; tone: string }> = {
-  draft: { label: "Draft", help: "Brands can't see your listing yet. Finish the steps, then submit and start your $100 monthly subscription to go live.", tone: "" },
-  submitted: { label: "Submitted", help: "Your listing is ready. Start your $100 monthly subscription to go live.", tone: "is-mist" },
+  draft: { label: "Draft", help: "Brands can't see your listing yet. Finish the steps, then publish it.", tone: "" },
+  submitted: { label: "Submitted", help: "Your listing is ready. Publish it to go live.", tone: "is-mist" },
   live: { label: "Live", help: "Brands can find and message you.", tone: "is-blue" },
   paused_billing: { label: "Paused for billing", help: "Your last payment didn't go through. Update your card in Billing and your listing goes live again automatically.", tone: "" },
   paused_admin: { label: "Paused by Purvey", help: "Purvey has paused your listing. Reply to our email or contact us to resolve it.", tone: "" },
 };
 
 export function ListingBuilder({ initial, refs, banner }: { initial: BuilderInitial; refs: RefData; banner: string | null }) {
-  const [step, setStep] = useState(0);
+  const [step, setStepState] = useState(0);
+  // Moving between steps brings the top of the builder into view.
+  const setStep = (i: number) => { setStepState(i); requestAnimationFrame(() => document.getElementById("listing-h")?.scrollIntoView({ block: "start", behavior: "smooth" })); };
   const [checklist, setChecklist] = useState(initial.checklist);
   const completeness = checklist.length ? Math.round((100 * checklist.filter((c) => c.done).length) / checklist.length) : 0;
   const onSaved = useCallback((r: SaveResult) => { if (r.ok) setChecklist(r.checklist); }, []);
@@ -122,7 +120,7 @@ export function ListingBuilder({ initial, refs, banner }: { initial: BuilderInit
     retailers: useAutosave("retailers", retailers, onSaved, (rs) => ({ rows: rs.map((r) => r.retailerId ? { retailerId: r.retailerId, freq: r.freq } : { customName: r.customName, freq: r.freq }) })),
     categories: useAutosave("categories", categories, onSaved),
     terms: useAutosave("terms", terms, onSaved),
-    proof: useAutosave("proof", proof, onSaved),
+    proof: useAutosave("proof", proof, onSaved, (p) => ({ ...p, references: p.references.map((r) => ({ ...r, email: EMAIL.test(r.email.trim()) ? r.email : "" })) })),
   };
 
   const stateNames = useMemo(() => Object.fromEntries(refs.states.map((s) => [s.code, s.name])), [refs.states]);
@@ -132,7 +130,7 @@ export function ListingBuilder({ initial, refs, banner }: { initial: BuilderInit
     logoUrl,
     hq: [company.hqCity, company.hqState].filter(Boolean).join(", ") || null,
     coverage: coverageSummary(coverage.states, refs.states, refs.regions),
-    channels: nameOf(refs.channels, coverage.channels),
+    channels: [...nameOf(refs.channels, coverage.channels), ...coverage.otherChannels],
     retailers: topRetailers(retailers.map((r) => ({ name: r.name, freq: r.freq }))),
     verified: initial.verified,
     notTakingNewLines: initial.notTakingNewLines,
@@ -149,14 +147,9 @@ export function ListingBuilder({ initial, refs, banner }: { initial: BuilderInit
   function submit() {
     setSubmitError(null);
     startSubmit(async () => {
-      const r = await submitAndCheckout();
+      const r = await publishListing();
       if (!r.ok) return setSubmitError(r.error);
-      if (r.checkoutUrl) {
-        // Top-level navigation: Stripe Checkout must never load inside the purveycpg.com iframe.
-        (window.top ?? window).location.href = r.checkoutUrl;
-      } else {
-        window.location.reload();
-      }
+      window.location.reload();
     });
   }
 
@@ -224,19 +217,19 @@ export function ListingBuilder({ initial, refs, banner }: { initial: BuilderInit
                 onToggle={(code) => setCoverage((c) => ({ ...c, states: c.states.includes(code) ? c.states.filter((s) => s !== code) : [...c.states, code] }))} />
               <p className="bench-hint" style={{ margin: 0 }}>{coverage.states.length} states · {preview.coverage}</p>
               <h3 className="bench-label">Channels</h3>
-              <Chips label="Channels" options={refs.channels} selected={coverage.channels} onChange={(v) => setCoverage((c) => ({ ...c, channels: v }))} />
+              <Chips label="Channels" options={refs.channels} selected={coverage.channels} onChange={(v) => setCoverage((c) => ({ ...c, channels: v }))} other={coverage.otherChannels} onOther={(v) => setCoverage((c) => ({ ...c, otherChannels: v }))} />
               <h3 className="bench-label">Distributors you work with</h3>
-              <Chips label="Distributors" options={refs.distributors} selected={coverage.distributors} onChange={(v) => setCoverage((c) => ({ ...c, distributors: v }))} />
+              <Chips label="Distributors" options={refs.distributors} selected={coverage.distributors} onChange={(v) => setCoverage((c) => ({ ...c, distributors: v }))} other={coverage.otherDistributors} onOther={(v) => setCoverage((c) => ({ ...c, otherDistributors: v }))} />
             </div>
           )}
           {current === "retailers" && <RetailersStep rows={retailers} setRows={setRetailers} options={refs.retailers} />}
           {current === "categories" && (
             <div className="bench-stack">
               <h3 className="bench-label">Categories you sell</h3>
-              <Chips label="Categories you sell" options={refs.categories} selected={categories.categories} onChange={(v) => setCategories((c) => ({ ...c, categories: v }))} />
+              <Chips label="Categories you sell" options={refs.categories} selected={categories.categories} onChange={(v) => setCategories((c) => ({ ...c, categories: v }))} other={categories.otherCategories} onOther={(v) => setCategories((c) => ({ ...c, otherCategories: v }))} />
               <h3 className="bench-label">Categories you can&rsquo;t take on (conflicts)</h3>
               <p className="bench-hint" style={{ margin: 0 }}>Brands in these categories see a conflict warning on your card.</p>
-              <Chips label="Conflicts" options={refs.categories} selected={categories.conflicts} onChange={(v) => setCategories((c) => ({ ...c, conflicts: v }))} />
+              <Chips label="Conflicts" options={refs.categories} selected={categories.conflicts} onChange={(v) => setCategories((c) => ({ ...c, conflicts: v }))} other={categories.otherConflicts} onOther={(v) => setCategories((c) => ({ ...c, otherConflicts: v }))} />
               <Field id="current-lines" label="Current lines carried" hint="One per line, e.g. Kettle chips · Midwest">
                 <textarea id="current-lines" className="bench-input" value={categories.currentLines} maxLength={2000}
                   onChange={(e) => setCategories((c) => ({ ...c, currentLines: e.target.value }))} />
@@ -275,9 +268,9 @@ export function ListingBuilder({ initial, refs, banner }: { initial: BuilderInit
           )}
 
           <div className="bench-row" style={{ justifyContent: "space-between", marginTop: 8 }}>
-            <button type="button" className="button bench-btn-ghost w-button" disabled={step === 0} onClick={() => setStep((s) => s - 1)}>Back</button>
+            <button type="button" className="button bench-btn-ghost w-button" disabled={step === 0} onClick={() => setStep(step - 1)}>Back</button>
             {step < STEPS.length - 1 ? (
-              <button type="button" className="button w-button" onClick={() => setStep((s) => s + 1)}>Next: {STEPS[step + 1].label}</button>
+              <button type="button" className="button w-button" onClick={() => setStep(step + 1)}>Next: {STEPS[step + 1].label}</button>
             ) : null}
           </div>
         </section>
@@ -327,13 +320,13 @@ export function ListingBuilder({ initial, refs, banner }: { initial: BuilderInit
           {(initial.displayState === "draft" || initial.displayState === "submitted") && (
             <div className="bench-card bench-stack">
               <h2 className="bench-eyebrow" style={{ margin: 0 }}>Go live</h2>
-              <p className="bench-small" style={{ margin: 0 }}>$100 a month, flat. Cancel any time. Ranking is by fit only; payment never changes your position.</p>
+              <p className="bench-small" style={{ margin: 0 }}>Your plan is paid. Publish once you have a description, a public contact, your states and at least three retailers.</p>
               {initial.isOwner ? (
                 <button type="button" className="button bench-btn-block w-button" onClick={submit} disabled={submitting}>
-                  {submitting ? "Opening checkout…" : "Submit and go live"}
+                  {submitting ? "Publishing…" : "Publish listing"}
                 </button>
               ) : (
-                <p className="bench-small bench-muted" style={{ margin: 0 }}>An owner on your team can submit and start billing.</p>
+                <p className="bench-small bench-muted" style={{ margin: 0 }}>An owner on your team can publish the listing.</p>
               )}
               {submitError && <p className="bench-notice is-error" role="alert" style={{ margin: 0 }}>{submitError}</p>}
             </div>
@@ -455,8 +448,13 @@ function ProofStep({ proof, setProof, docs, setDocs, listingId, onSaved }: {
   proof: BuilderInitial["proof"]; setProof: React.Dispatch<React.SetStateAction<BuilderInitial["proof"]>>;
   docs: DocRow[]; setDocs: React.Dispatch<React.SetStateAction<DocRow[]>>; listingId: string; onSaved: (r: SaveResult) => void;
 }) {
-  const refs = [0, 1].map((i) => proof.references[i] ?? { name: "", brand: "", email: "", phone: "" });
-  const setRef = (i: number, k: string, v: string) => setProof((p) => ({ ...p, references: [0, 1].map((j) => (j === i ? { ...refs[j], [k]: v } : refs[j])) }));
+  const blank = { name: "", brand: "", email: "", phone: "" };
+  // Always show at least two reference cards; up to five.
+  const refs = Array.from({ length: Math.max(2, proof.references.length) }, (_, i) => proof.references[i] ?? blank);
+  const complete = refs.filter((r) => r.name.trim() && r.brand.trim()).length;
+  const setRef = (i: number, k: string, v: string) => setProof((p) => ({ ...p, references: refs.map((r, j) => (j === i ? { ...r, [k]: v } : r)) }));
+  const addRef = () => setProof((p) => ({ ...p, references: [...refs, blank].slice(0, 5) }));
+  const removeRef = (i: number) => setProof((p) => ({ ...p, references: refs.length > 2 ? refs.filter((_, j) => j !== i) : refs.map((r, j) => (j === i ? blank : r)) }));
   const [docMsg, setDocMsg] = useState<string | null>(null);
   const [isPrivate, setIsPrivate] = useState(false);
   async function uploadDoc(file: File) {
@@ -471,25 +469,51 @@ function ProofStep({ proof, setProof, docs, setDocs, listingId, onSaved }: {
   }
   return (
     <div className="bench-stack">
+      <h3 className="bench-h-card" style={{ margin: 0 }}>Your team</h3>
       <div className="bench-grid-3">
         <Field id="years" label="Years in business"><input id="years" className="bench-input" inputMode="numeric" value={proof.years} onChange={(e) => setProof((p) => ({ ...p, years: e.target.value }))} /></Field>
         <Field id="team" label="Team size"><input id="team" className="bench-input" inputMode="numeric" value={proof.teamSize} onChange={(e) => setProof((p) => ({ ...p, teamSize: e.target.value }))} /></Field>
         <Field id="merch" label="Retail merchandisers"><input id="merch" className="bench-input" inputMode="numeric" value={proof.merchandisers} onChange={(e) => setProof((p) => ({ ...p, merchandisers: e.target.value }))} /></Field>
       </div>
-      <h3 className="bench-label" style={{ marginTop: 8 }}>Two brand references</h3>
-      <p className="bench-hint" style={{ margin: 0 }}>Private. Only Purvey sees these, to verify your listing. Brands never do.</p>
-      {refs.map((r, i) => (
-        <fieldset key={i} className="bench-card is-white" style={{ border: 0, margin: 0 }}>
-          <legend className="bench-eyebrow" style={{ float: "left", width: "100%", marginBottom: 12 }}>Reference {i + 1}</legend>
-          <div className="bench-grid-2">
-            <Field id={`r${i}-name`} label="Name"><input id={`r${i}-name`} className="bench-input" value={r.name} onChange={(e) => setRef(i, "name", e.target.value)} /></Field>
-            <Field id={`r${i}-brand`} label="Brand"><input id={`r${i}-brand`} className="bench-input" value={r.brand} onChange={(e) => setRef(i, "brand", e.target.value)} /></Field>
-            <Field id={`r${i}-email`} label="Email"><input id={`r${i}-email`} type="email" className="bench-input" value={r.email} onChange={(e) => setRef(i, "email", e.target.value)} /></Field>
-            <Field id={`r${i}-phone`} label="Phone"><input id={`r${i}-phone`} type="tel" className="bench-input" value={r.phone} onChange={(e) => setRef(i, "phone", e.target.value)} /></Field>
-          </div>
-        </fieldset>
-      ))}
-      <h3 className="bench-label" style={{ marginTop: 8 }}>Documents</h3>
+      <div className="bench-stack" style={{ gap: 12 }}>
+        <div className="bench-row" style={{ justifyContent: "space-between" }}>
+          <h3 className="bench-h-card" style={{ margin: 0 }}>Brand references</h3>
+          <span className={`bench-tag${complete >= 2 ? " is-blue" : ""}`}>{complete} of 2 added</span>
+        </div>
+        <p className="bench-hint" style={{ margin: 0 }}>
+          Brands you represent now or recently. <strong>Private:</strong> only Purvey sees these, to verify your listing. Brands never do.
+          Add at least two; name and brand are required, and an email or phone lets us reach them.
+        </p>
+        {refs.map((r, i) => {
+          const emailBad = r.email.trim() !== "" && !EMAIL.test(r.email.trim());
+          const ok = r.name.trim() && r.brand.trim();
+          return (
+            <fieldset key={i} className="bench-refcard">
+              <legend className="bench-sr-only">Reference {i + 1}</legend>
+              <div className="bench-row" style={{ justifyContent: "space-between" }} aria-hidden="true">
+                <span className="bench-eyebrow">Reference {i + 1}</span>
+                <span className={`bench-small ${ok ? "" : "bench-muted"}`}>{ok ? "Ready" : "Needs a name and brand"}</span>
+              </div>
+              <div className="bench-grid-2">
+                <Field id={`r${i}-name`} label="Contact name"><input id={`r${i}-name`} className="bench-input" autoComplete="off" value={r.name} maxLength={120} onChange={(e) => setRef(i, "name", e.target.value)} /></Field>
+                <Field id={`r${i}-brand`} label="Brand"><input id={`r${i}-brand`} className="bench-input" autoComplete="off" value={r.brand} maxLength={120} onChange={(e) => setRef(i, "brand", e.target.value)} /></Field>
+                <div className="bench-field">
+                  <label htmlFor={`r${i}-email`} className="bench-label">Email</label>
+                  <input id={`r${i}-email`} type="email" className="bench-input" autoComplete="off" value={r.email} onChange={(e) => setRef(i, "email", e.target.value)}
+                    aria-invalid={emailBad || undefined} aria-describedby={emailBad ? `r${i}-email-err` : undefined} />
+                  {emailBad && <p id={`r${i}-email-err`} className="bench-hint is-error" style={{ margin: 0 }}>Check this email address. We&rsquo;ll save it once it&rsquo;s complete.</p>}
+                </div>
+                <Field id={`r${i}-phone`} label="Phone"><input id={`r${i}-phone`} type="tel" className="bench-input" autoComplete="off" value={r.phone} maxLength={40} onChange={(e) => setRef(i, "phone", e.target.value)} /></Field>
+              </div>
+              {refs.length > 2 || r.name || r.brand || r.email || r.phone ? (
+                <div><button type="button" className="bench-link-btn" aria-label={`Remove reference ${i + 1}`} onClick={() => removeRef(i)}>{refs.length > 2 ? "Remove" : "Clear"}</button></div>
+              ) : null}
+            </fieldset>
+          );
+        })}
+        {refs.length < 5 && <div><button type="button" className="button is-small bench-btn-ghost w-button" onClick={addRef}>Add another reference</button></div>}
+      </div>
+      <h3 className="bench-h-card" style={{ margin: "12px 0 0" }}>Documents</h3>
       <p className="bench-hint" style={{ margin: 0 }}>A line card or capabilities deck (PDF, up to 10 MB). Public documents appear on your profile; private ones only Purvey sees.</p>
       <div className="bench-row">
         <label className="bench-row" style={{ gap: 8 }}><input type="checkbox" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} /> Upload as private</label>
@@ -508,7 +532,7 @@ function ProofStep({ proof, setProof, docs, setDocs, listingId, onSaved }: {
               <label className="bench-row bench-small" style={{ gap: 6 }}>
                 <input type="checkbox" checked={d.is_private} onChange={async (e) => { const v = e.target.checked; const r = await setDocumentPrivacy(d.id, v); onSaved(r); if (r.ok) setDocs((ds) => ds.map((x) => (x.id === d.id ? { ...x, is_private: v } : x))); }} /> Private
               </label>
-              <button type="button" className="bench-link-btn" aria-label={`Delete ${d.file_name}`} onClick={async () => { const r = await deleteDocument(d.id); onSaved(r); if (r.ok) setDocs((ds) => ds.filter((x) => x.id !== d.id)); }}>Delete</button>
+              <button type="button" className="bench-link-btn" aria-label={`Delete ${d.file_name}`} onClick={async () => { if (!window.confirm(`Delete ${d.file_name}?`)) return; const r = await deleteDocument(d.id); onSaved(r); if (r.ok) setDocs((ds) => ds.filter((x) => x.id !== d.id)); }}>Delete</button>
             </li>
           ))}
         </ul>

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { sendNow } from "@/lib/email/send";
+import { safeNext } from "@/lib/redirect";
 import { getSession } from "@/lib/session";
 import { requestOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
@@ -44,6 +45,7 @@ export async function completeOnboarding(_prev: FormState, form: FormData): Prom
     hqCity: form.get("hqCity") ?? "",
     hqState: form.get("hqState") ?? "",
   });
+  const next = safeNext(form.get("next") as string | null, "");
   if (!parsed.success) return { fieldErrors: fieldErrors(parsed.error) };
 
   const supabase = await createClient();
@@ -57,7 +59,9 @@ export async function completeOnboarding(_prev: FormState, form: FormData): Prom
   });
   if (error) return { error: error.message.includes("already belong") ? "You already belong to an organization." : "Something went wrong. Please try again." };
 
-  redirect(parsed.data.type === "broker" ? "/app?welcome=broker" : "/app?welcome=brand");
+  // Brokers choose a plan first; brands go back to where they were headed, if anywhere.
+  if (parsed.data.type === "brand" && next.startsWith("/") && !next.startsWith("/app/onboarding")) redirect(next);
+  redirect(parsed.data.type === "broker" ? "/app/listing?welcome=1" : "/app/brand?welcome=1");
 }
 
 const inviteSchema = z.object({

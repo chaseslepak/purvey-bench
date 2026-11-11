@@ -15,17 +15,25 @@ const METRICS = [
 ] as const;
 
 function Sparkline({ values, label }: { values: number[]; label: string }) {
+  const half = Math.floor(values.length / 2);
+  const recent = values.slice(half).reduce((a, b) => a + b, 0);
+  const earlier = values.slice(0, half).reduce((a, b) => a + b, 0);
+  const delta = recent - earlier;
+  const summary = `${label}: ${recent} in the second half of the period, ${delta === 0 ? "the same as" : `${Math.abs(delta)} ${delta > 0 ? "more than" : "fewer than"}`} the first half. Peak ${Math.max(0, ...values)} in a day.`;
   const w = 160, h = 40, max = Math.max(1, ...values);
   const pts = values.map((v, i) => `${(i / Math.max(1, values.length - 1)) * w},${h - 4 - (v / max) * (h - 8)}`);
   const area = `0,${h} ${pts.join(" ")} ${w},${h}`;
   const last = pts[pts.length - 1]?.split(",").map(Number) ?? [w, h];
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} role="img" aria-label={`${label} trend`} preserveAspectRatio="none">
+    <>
+    <span className="bench-sr-only">{summary}</span>
+    <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} aria-hidden="true" focusable="false" preserveAspectRatio="none">
       <line x1="0" x2={w} y1={h - 4} y2={h - 4} stroke="var(--pv-line)" strokeWidth="1" />
       <polygon points={area} fill="var(--pv-cta)" opacity="0.5" />
       <polyline points={pts.join(" ")} fill="none" stroke="var(--pv-blue)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
       <circle cx={last[0]} cy={last[1]} r="3" fill="var(--pv-blue)" />
     </svg>
+    </>
   );
 }
 
@@ -45,11 +53,13 @@ export default async function Analytics({ searchParams }: { searchParams: Promis
   if (session.org.type !== "broker") redirect("/app");
   const days = (await searchParams).days === "90" ? 90 : 30;
   const db = await createClient();
-  const [{ data: rows }, { data: sugg }, { data: checklist }] = await Promise.all([
+  const [{ data: rows }, { data: sugg }, { data: checklist }, { data: listing }] = await Promise.all([
     db.rpc("listing_analytics", { p_days: days }),
     db.rpc("broker_suggestions"),
     db.rpc("my_listing_checklist"),
+    db.from("broker_listings").select("status, admin_paused").eq("org_id", session.org.id).maybeSingle(),
   ]);
+  const live = listing?.status === "live" && !listing.admin_paused;
   const series = (key: string) => dailySeries((rows ?? []) as Row[], key, days);
   const suggestions = (sugg ?? []) as { kind: string; label: string; searches: number; current: string | null }[];
   const missing = ((checklist ?? []) as { label: string; done: boolean }[]).filter((c) => !c.done);
@@ -66,6 +76,7 @@ export default async function Analytics({ searchParams }: { searchParams: Promis
         </div>
         <h1 className="bench-h-section">Analytics</h1>
         <p className="bench-lede" style={{ margin: 0 }}>How brands found and engaged with your listing over the last {days} days. Brand names are never shown.</p>
+        {!live && <p className="bench-notice" role="status" style={{ margin: 0 }}>You&rsquo;re not live yet, so these numbers start once you publish. <Link className="bench-link" href="/app/listing">Open your listing</Link>.</p>}
       </section>
       <section className="bench-kpis" aria-label="Metrics">
         {METRICS.map((m) => {
@@ -93,7 +104,7 @@ export default async function Analytics({ searchParams }: { searchParams: Promis
                     ? s.current ? `Add weekly calls for ${s.label}` : `Add ${s.label} with your call frequency`
                     : `Add ${s.label} to your coverage`}
                 </Link>
-                <span className="bench-muted bench-small"> · brands searched for it {s.searches} time{Number(s.searches) === 1 ? "" : "s"} this month</span>
+                <span className="bench-muted bench-small"> · brands searched for it {s.searches} time{Number(s.searches) === 1 ? "" : "s"} in the last 30 days</span>
               </li>
             ))}
             {missing.slice(0, 4).map((m) => <li key={m.label}><Link className="bench-link" href="/app/listing">{m.label}</Link></li>)}

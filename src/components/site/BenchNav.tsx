@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BenchNavLinks, type NavItem } from "./BenchNavLinks";
 import { getSession } from "@/lib/session";
 
 /**
@@ -7,50 +8,23 @@ import { getSession } from "@/lib/session";
  */
 export async function BenchNav() {
   const session = await getSession();
+  const type = session?.org?.type;
+  const items: NavItem[] = [
+    ...(session ? [{ href: "/app", label: "Dashboard" }] : []),
+    { href: "/find", label: "Find brokers" },
+    ...(type === "brand" ? [{ href: "/app/brand", label: "Brand profile" }, { href: "/app/briefs", label: "Briefs" }, { href: "/app/saved", label: "Saved" }] : []),
+    ...(type === "broker" ? [{ href: "/app/listing", label: "Listing" }, { href: "/app/analytics", label: "Analytics" }, { href: "/app/reviews", label: "Reviews" }] : []),
+    ...(!session ? [{ href: "/for-brokers", label: "For brokers" }, { href: "/pricing", label: "Pricing" }] : []),
+    ...(session ? [{ href: "/app/inbox", label: "Inbox" }] : []),
+    ...(session?.org ? [{ href: "/app/team", label: "Team" }] : []),
+    ...(type === "broker" && session?.org?.memberRole === "owner" ? [{ href: "/app/billing", label: "Billing" }] : []),
+    ...(session ? [{ href: "/app/settings", label: "Settings" }] : []),
+    ...(session?.isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
+  ];
   return (
     <nav className="bench-subnav" aria-label="Purvey Bench">
       <Link href="/" className="bench-subnav_brand">Purvey Bench</Link>
-      <div className="bench-subnav_links">
-        <Link href="/find" className="bench-subnav_link">Find brokers</Link>
-        {session?.org?.type === "brand" && (
-          <>
-            <Link href="/app/briefs" className="bench-subnav_link">Briefs</Link>
-            <Link href="/app/saved" className="bench-subnav_link">Saved</Link>
-          </>
-        )}
-        {session?.org?.type === "broker" && (
-          <>
-            <Link href="/app/listing" className="bench-subnav_link">Listing</Link>
-            <Link href="/app/analytics" className="bench-subnav_link">Analytics</Link>
-            <Link href="/app/reviews" className="bench-subnav_link">Reviews</Link>
-          </>
-        )}
-        {!session && (
-          <>
-            <Link href="/for-brokers" className="bench-subnav_link">For brokers</Link>
-            <Link href="/pricing" className="bench-subnav_link">Pricing</Link>
-          </>
-        )}
-        {session ? (
-          <>
-            {session.isAdmin && <Link href="/admin" className="bench-subnav_link">Admin</Link>}
-            <Link href="/app/inbox" className="bench-subnav_link">Inbox</Link>
-            {session.org && <Link href="/app/team" className="bench-subnav_link">Team</Link>}
-            <Link href="/app" className="bench-subnav_link">Dashboard</Link>
-            <Link href="/app/settings" className="bench-subnav_link">Settings</Link>
-            <form action="/auth/sign-out" method="post">
-              <button type="submit" className="bench-subnav_link" style={{ background: "none", border: 0, cursor: "pointer" }}>
-                Sign out
-              </button>
-            </form>
-          </>
-        ) : (
-          <>
-            <Link href="/sign-in" className="bench-subnav_link">Sign in</Link>
-            <Link href="/sign-up" className="button is-small w-button">Get started</Link>
-          </>
-        )}
-      </div>
+      <BenchNavLinks items={items} signedIn={Boolean(session)} />
     </nav>
   );
 }

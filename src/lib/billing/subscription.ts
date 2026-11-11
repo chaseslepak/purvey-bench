@@ -5,6 +5,7 @@ export type SubscriptionRow = {
   stripe_customer_id: string;
   stripe_subscription_id: string;
   stripe_price_id: string | null;
+  plan: "monthly" | "annual" | null;
   status: string;
   current_period_end: string | null;
   cancel_at_period_end: boolean;
@@ -31,6 +32,7 @@ export function subscriptionRow(
     stripe_customer_id: id(sub.customer)!,
     stripe_subscription_id: sub.id,
     stripe_price_id: sub.items.data[0]?.price?.id ?? null,
+    plan: planOf(sub),
     status: sub.status,
     current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
     cancel_at_period_end: sub.cancel_at_period_end,
@@ -47,4 +49,18 @@ export function orgIdFromSubscription(sub: Stripe.Subscription): string | null {
 /** The subscription an invoice is for (moved under `parent` in API 2025-03). */
 export function subscriptionIdFromInvoice(inv: Stripe.Invoice): string | null {
   return id(inv.parent?.subscription_details?.subscription ?? null);
+}
+
+/** Monthly or annual, from the subscription's price interval. */
+export function planOf(sub: Stripe.Subscription): "monthly" | "annual" | null {
+  const i = sub.items.data[0]?.price?.recurring?.interval;
+  return i === "year" ? "annual" : i === "month" ? "monthly" : null;
+}
+
+/** Whether a broker has paid access to build and publish a listing. */
+export function hasListingAccess(sub: { comped?: boolean | null; status?: string | null; current_period_end?: string | null } | null, now: Date = new Date()): boolean {
+  if (!sub) return false;
+  if (sub.comped) return true;
+  if (["active", "trialing", "past_due"].includes(sub.status ?? "")) return true;
+  return sub.status === "canceled" && !!sub.current_period_end && new Date(sub.current_period_end) > now;
 }

@@ -55,9 +55,10 @@ describe("acceptance 3: brokers are refused at the database", () => {
     expect(x.map((r) => r.id)).toEqual([f.brandA]);
   });
 
-  it("a broker cannot read brand profiles, saved brokers or placement requests", async () => {
+  it("a broker sees only the brand profiles of brands that messaged it, and never saved brokers or placement requests", async () => {
     await as(user(U.xavier), async (q) => {
-      expect(await q("select * from brand_profiles")).toHaveLength(0);
+      // Brand A started a conversation with broker X; brand B did not.
+      expect((await q<{ org_id: string }>("select org_id from brand_profiles")).map((r) => r.org_id)).toEqual([f.brandA]);
       expect(await q("select * from saved_brokers")).toHaveLength(0);
       expect(await q("select * from placement_requests")).toHaveLength(0);
     });
