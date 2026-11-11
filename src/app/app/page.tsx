@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { loadBrand } from "@/lib/brand-data";
 import { brandChecklist, completeness } from "@/lib/brand-profile";
 import { hasListingAccess } from "@/lib/billing/subscription";
+import { loadThreads } from "@/lib/inbox/load";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -46,10 +47,14 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     }
   }
 
+  const threads = await loadThreads(session.org.id, { tab: "all" });
+  const unread = threads.filter((t) => t.unread && !t.archived).length;
+  const awaiting = threads.filter((t) => !t.archived && !t.declined && !t.lastFromMe).length;
+
   return (
     <>
       <section className="bench-section is-cream bench-stack">
-        <div className="text_title">{session.org.type === "broker" ? "Brokerage" : "Brand"} · {session.org.memberRole}</div>
+        <div className="text_title">{session.org.type === "broker" ? "Brokerage" : "Brand"} · {session.org.memberRole === "owner" ? "Owner" : "Member"}</div>
         <h1 className="bench-h-section">{session.org.name}</h1>
         {welcome && (
           <p className="bench-notice" role="status">
@@ -104,7 +109,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           <div className="bench-card bench-stack">
             <div className="bench-eyebrow">Brand profile</div>
             <div className="bench-h-section">{brandStrength.pct}%</div>
-            <div className="bench-progress" aria-hidden="true" style={{ marginTop: 0 }}><span style={{ width: `${brandStrength.pct}%` }} /></div>
+            <div className="bench-progress" role="progressbar" aria-label="Brand profile strength" aria-valuemin={0} aria-valuemax={100} aria-valuenow={brandStrength.pct} style={{ marginTop: 0 }}><span style={{ width: `${brandStrength.pct}%` }} /></div>
             <p className="bench-small bench-muted" style={{ margin: 0 }}>{brandStrength.next ? `Next: ${brandStrength.next}.` : "Complete. Brokers you message see all of it."}</p>
             <div><Link href="/app/brand" className="button is-small w-button">{brandStrength.pct < 100 ? "Finish your profile" : "Edit your profile"}</Link></div>
           </div>
@@ -121,10 +126,24 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         </section>
       )}
 
-      <section className="bench-section bench-stack">
-        <h2 className="bench-h-section">Your team</h2>
-        <p className="bench-muted">Invite teammates so everyone works from the same {session.org.type === "broker" ? "listing and inbox" : "briefs, shortlist and inbox"}.</p>
-        <div><Link href="/app/team" className="button is-small w-button">Manage team</Link></div>
+      <section className="bench-grid-2">
+        <div className="bench-card bench-stack">
+          <div className="bench-eyebrow">Inbox</div>
+          {threads.length ? (
+            <>
+              <div className="bench-h-section">{unread} unread</div>
+              <p className="bench-small bench-muted" style={{ margin: 0 }}>{awaiting ? `${awaiting} conversation${awaiting === 1 ? "" : "s"} waiting on your reply.` : "You're caught up."} {threads.length} in total.</p>
+            </>
+          ) : (
+            <p className="bench-small" style={{ margin: 0 }}>{session.org.type === "broker" ? "Brands start conversations with you once your listing is live." : "Message a broker from their profile to start a conversation."}</p>
+          )}
+          <div><Link href={unread ? "/app/inbox?tab=unread" : "/app/inbox"} className="button is-small w-button">Open inbox</Link></div>
+        </div>
+        <div className="bench-card bench-stack">
+          <div className="bench-eyebrow">Your team</div>
+          <p className="bench-small" style={{ margin: 0 }}>Invite teammates so everyone works from the same {session.org.type === "broker" ? "listing and inbox" : "briefs, shortlist and inbox"}. Conversations can be assigned to anyone.</p>
+          <div><Link href="/app/team" className="button is-small bench-btn-ghost w-button">Manage team</Link></div>
+        </div>
       </section>
     </>
   );

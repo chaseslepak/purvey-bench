@@ -200,7 +200,7 @@ export function BrandBuilder({ orgId, isOwner, company: c0, profile: p0, product
         <div className="bench-card bench-stack" style={{ gap: 10 }}>
           <div className="bench-eyebrow">Profile strength</div>
           <div className="bench-h-section" style={{ margin: 0 }}>{pct}%</div>
-          <div className="bench-progress" aria-hidden="true" style={{ marginTop: 0 }}><span style={{ width: `${pct}%` }} /></div>
+          <div className="bench-progress" role="progressbar" aria-label="Profile strength" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} style={{ marginTop: 0 }}><span style={{ width: `${pct}%` }} /></div>
           <ul className="bench-todo">
             {items.map((i) => (
               <li key={i.key} style={i.done ? { color: "var(--pv-muted)", textDecoration: "line-through" } : undefined}>
@@ -241,7 +241,7 @@ function Products({ products, onMsg }: { products: Product[]; onMsg: (m: { ok?: 
                   <td>
                     <div className="bench-row" style={{ gap: 12 }}>
                       <button type="button" className="bench-link-btn" onClick={() => edit(x)}>Edit</button>
-                      <button type="button" className="bench-link-btn" disabled={pending} onClick={() => start(async () => { const r = await deleteProduct(x.id); onMsg(r.ok ? { ok: `Removed ${x.name}.` } : { error: r.error }); router.refresh(); })}>Remove</button>
+                      <button type="button" className="bench-link-btn" disabled={pending} onClick={() => { if (!window.confirm(`Remove ${x.name}?`)) return; start(async () => { const r = await deleteProduct(x.id); onMsg(r.ok ? { ok: `Removed ${x.name}.` } : { error: r.error }); router.refresh(); }); }}>Remove</button>
                     </div>
                   </td>
                 </tr>
@@ -334,7 +334,7 @@ function DataRoom({ orgId, files, onMsg }: { orgId: string; files: DataFile[]; o
                 <button type="button" className="bench-link-btn" onClick={() => start(async () => { const r = await openBrandFile(x.id); if (r.url) window.open(r.url, "_blank", "noopener"); else onMsg({ error: r.error }); })}>{x.name}</button>
                 <span className="bench-row bench-small bench-muted" style={{ gap: 12 }}>
                   {fmtSize(x.size)}
-                  <button type="button" className="bench-link-btn" onClick={() => start(async () => { const r = await deleteBrandFile(x.id); onMsg(r.ok ? { ok: `Deleted ${x.name}.` } : { error: r.error }); router.refresh(); })}>Delete</button>
+                  <button type="button" className="bench-link-btn" onClick={() => { if (!window.confirm(`Delete ${x.name} from your data room?`)) return; start(async () => { const r = await deleteBrandFile(x.id); onMsg(r.ok ? { ok: `Deleted ${x.name}.` } : { error: r.error }); router.refresh(); }); }}>Delete</button>
                 </span>
               </li>
             ))}

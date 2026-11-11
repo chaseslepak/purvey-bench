@@ -69,6 +69,13 @@ function useAutosave<T>(step: StepName, value: T, onSaved: (r: SaveResult) => vo
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- save when the value changes
   }, [JSON.stringify(value)]);
+  // Don't let someone close the tab with an edit still waiting to save.
+  useEffect(() => {
+    if (status.kind !== "saving") return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [status.kind]);
   return status;
 }
 
@@ -91,7 +98,9 @@ const STATE_COPY: Record<string, { label: string; help: string; tone: string }> 
 };
 
 export function ListingBuilder({ initial, refs, banner }: { initial: BuilderInitial; refs: RefData; banner: string | null }) {
-  const [step, setStep] = useState(0);
+  const [step, setStepState] = useState(0);
+  // Moving between steps brings the top of the builder into view.
+  const setStep = (i: number) => { setStepState(i); requestAnimationFrame(() => document.getElementById("listing-h")?.scrollIntoView({ block: "start", behavior: "smooth" })); };
   const [checklist, setChecklist] = useState(initial.checklist);
   const completeness = checklist.length ? Math.round((100 * checklist.filter((c) => c.done).length) / checklist.length) : 0;
   const onSaved = useCallback((r: SaveResult) => { if (r.ok) setChecklist(r.checklist); }, []);
@@ -259,9 +268,9 @@ export function ListingBuilder({ initial, refs, banner }: { initial: BuilderInit
           )}
 
           <div className="bench-row" style={{ justifyContent: "space-between", marginTop: 8 }}>
-            <button type="button" className="button bench-btn-ghost w-button" disabled={step === 0} onClick={() => setStep((s) => s - 1)}>Back</button>
+            <button type="button" className="button bench-btn-ghost w-button" disabled={step === 0} onClick={() => setStep(step - 1)}>Back</button>
             {step < STEPS.length - 1 ? (
-              <button type="button" className="button w-button" onClick={() => setStep((s) => s + 1)}>Next: {STEPS[step + 1].label}</button>
+              <button type="button" className="button w-button" onClick={() => setStep(step + 1)}>Next: {STEPS[step + 1].label}</button>
             ) : null}
           </div>
         </section>
@@ -523,7 +532,7 @@ function ProofStep({ proof, setProof, docs, setDocs, listingId, onSaved }: {
               <label className="bench-row bench-small" style={{ gap: 6 }}>
                 <input type="checkbox" checked={d.is_private} onChange={async (e) => { const v = e.target.checked; const r = await setDocumentPrivacy(d.id, v); onSaved(r); if (r.ok) setDocs((ds) => ds.map((x) => (x.id === d.id ? { ...x, is_private: v } : x))); }} /> Private
               </label>
-              <button type="button" className="bench-link-btn" aria-label={`Delete ${d.file_name}`} onClick={async () => { const r = await deleteDocument(d.id); onSaved(r); if (r.ok) setDocs((ds) => ds.filter((x) => x.id !== d.id)); }}>Delete</button>
+              <button type="button" className="bench-link-btn" aria-label={`Delete ${d.file_name}`} onClick={async () => { if (!window.confirm(`Delete ${d.file_name}?`)) return; const r = await deleteDocument(d.id); onSaved(r); if (r.ok) setDocs((ds) => ds.filter((x) => x.id !== d.id)); }}>Delete</button>
             </li>
           ))}
         </ul>

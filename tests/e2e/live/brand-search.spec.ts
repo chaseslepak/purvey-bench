@@ -46,7 +46,7 @@ test.describe("brand search, briefs and profiles (live)", () => {
     await page.waitForURL(/\/app\/briefs\/[0-9a-f-]{36}$/);
     await page.selectOption("#b-cat", { label: "Meat Snacks" });
     for (const s of ["Illinois", "Ohio"]) await page.getByRole("group", { name: "States covered" }).getByRole("button", { name: new RegExp(s) }).click();
-    for (const r of ["Kroger", "Meijer"]) { await page.fill("#b-ret", r); await page.getByRole("button", { name: "Add", exact: true }).click(); }
+    for (const r of ["Kroger", "Meijer"]) { await page.getByLabel("Target retailers", { exact: true }).fill(r); await page.getByRole("button", { name: "Add", exact: true }).click(); }
     await page.getByRole("group", { name: "Channels" }).getByRole("button", { name: "Conventional Grocery" }).click();
     await expect(page.locator(".bench-save")).toHaveText("Saved", { timeout: 10_000 });
 

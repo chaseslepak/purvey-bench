@@ -71,6 +71,7 @@ test.describe("teams and sign-up lists (live)", () => {
 
     // The teammate leaves; the conversation goes back to unassigned.
     await mate.goto("/app/team");
+    mate.once("dialog", (d) => d.accept());
     await mate.getByRole("button", { name: "Leave team" }).click();
     await mate.waitForURL(/\/app\/onboarding/);
     const { data: side } = await db.from("conversation_sides").select("assignee_user_id").eq("conversation_id", conv!.id).eq("org_id", brandOrg).single();

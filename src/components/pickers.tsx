@@ -48,7 +48,7 @@ export function RefPicker({ options, selected, onChange, label, placeholder, oth
       if (others.some((x) => x.toLowerCase() === v.toLowerCase())) setMsg(`${v} is already added.`);
       else if (others.length >= 20) setMsg("You can add up to 20 of your own.");
       else { onOther([...others, v]); setMsg(`Added \u201c${v}\u201d. It isn\u2019t on our list yet, so we\u2019ll show it as you typed it.`); }
-    } else setMsg("Pick one from the list.");
+    } else { setMsg(`Nothing on the list is called \u201c${v}\u201d. Pick a suggestion as you type.`); return; }
     setQ("");
   };
   return (
