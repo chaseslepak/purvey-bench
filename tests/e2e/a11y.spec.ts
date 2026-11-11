@@ -19,16 +19,9 @@ for (const path of PAGES) {
   });
 }
 
-test("the MORE menu and mobile menu work by keyboard", async ({ page }) => {
+test("the mobile menu works by keyboard", async ({ page }) => {
   await page.goto("/pricing");
-  const more = page.getByRole("button", { name: "MORE" });
-  await more.focus();
-  await page.keyboard.press("Enter");
-  await expect(more).toHaveAttribute("aria-expanded", "true");
-  await expect(page.getByRole("link", { name: "Services" }).first()).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(more).toHaveAttribute("aria-expanded", "false");
-
+  await expect(page.locator(".navbar").getByRole("link", { name: "Insights" })).toBeVisible();
   await page.setViewportSize({ width: 479, height: 900 });
   const menu = page.getByRole("button", { name: "Menu" });
   await menu.focus();

@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
+import { EmbedBridge } from "@/components/site/EmbedBridge";
 import { BenchNav } from "@/components/site/BenchNav";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteHeader } from "@/components/site/SiteHeader";
@@ -41,6 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <a href="#main" className="bench-skip">Skip to content</a>
+        <Suspense fallback={null}><EmbedBridge /></Suspense>
         <div className="page-wrapper">
           <SiteHeader />
           <div className="main-wrapper">

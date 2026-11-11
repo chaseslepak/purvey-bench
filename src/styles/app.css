@@ -6,7 +6,9 @@
 /* Embedded mode: Webflow already shows the header, footer and CTA band. */
 html[data-embed="1"] .bench-chrome { display: none !important; }
 html[data-embed="1"] .page-wrapper { padding-top: 0; }
-html[data-embed="1"] body { background-color: transparent; }
+html[data-embed="1"] body { background-color: transparent; min-height: 0; }
+/* Embedded: the page is as tall as its content, so the iframe can fit it exactly. */
+html[data-embed="1"] { height: auto; }
 html[data-embed="1"] .main-wrapper { padding-top: 0; padding-bottom: 0; }
 
 /* Keyboard focus that matches the site's global focus style. */

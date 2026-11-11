@@ -117,7 +117,7 @@ export async function layoutBoxes(page: Page, root: string) {
       const b = e.getBoundingClientRect();
       const cls = [...e.classList].filter((c) => c !== "w--current" && !c.startsWith("bench-")).join(".");
       // Bench uses <button> where Webflow uses a <div> + webflow.js (menu
-      // button, MORE toggle) so they work by keyboard. Same box, same classes.
+      // button) so it works by keyboard. Same box, same classes.
       const tag = e.tagName.toLowerCase() === "button" ? "div" : e.tagName.toLowerCase();
       return { el: `${tag}.${cls}`, x: b.x - o.x, y: b.y - o.y, w: b.width, h: b.height };
     });
