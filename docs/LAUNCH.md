@@ -35,7 +35,7 @@ Hosts are relative to purveycpg.com (e.g. `send` = send.purveycpg.com).
 
 - ☐ Verify purveycpg.com in Resend → set `EMAIL_FROM=Purvey Bench <bench@purveycpg.com>` for production, and point Supabase's sign-in emails at Resend SMTP (removes the 2-emails-per-hour limit).
 - ☐ Create the Stripe webhook endpoint `https://bench.purveycpg.com/api/stripe/webhook` and set `STRIPE_WEBHOOK_SECRET` (test, then live).
-- ☐ Make Purvey's team admins: each person signs in once at bench.purveycpg.com, then `update users set is_admin = true where email = '…'` (Supabase SQL editor, or ask Claude). Admins get the **Admin** link and the daily queue digest.
+- ✅ Admins: `chase@purveycpg.com` is on the admin list and becomes an admin on first sign-in. To add someone: `insert into admin_allowlist (email) values ('name@purveycpg.com')` in the Supabase SQL editor (or ask Claude); an existing account is promoted at once.
 - ☐ Live mode: re-create the Bench Listing product, price and portal settings in Stripe live mode.
 
 ## 4. Decisions and content (Chase)
