@@ -118,7 +118,7 @@ export function search(all: ListingRow[], f: Filters, ref: Reference, brief: Fit
   return { total: scored.length, page, pages, items: scored.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), sort, loosen };
 }
 
-export function cardData(l: Scored, ref: Reference, conflictCategory?: string | null) {
+export function cardData(l: Scored, ref: Reference, conflictCategory?: string | null, rating?: { average: number; count: number } | null) {
   const channelNames = l.channels.map((c) => ref.channels.find((x) => x.id === c)?.name).filter(Boolean) as string[];
   return {
     name: l.name,
@@ -131,5 +131,6 @@ export function cardData(l: Scored, ref: Reference, conflictCategory?: string | 
     notTakingNewLines: l.notTakingNewLines,
     fit: l.fit ? { score: l.fit.score, reasons: l.fit.reasons } : null,
     conflict: l.fit?.conflict ? `Lists ${conflictCategory ?? "your category"} as a conflict` : null,
+    rating: rating ?? null,
   };
 }

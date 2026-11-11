@@ -5,7 +5,7 @@ import { RetailerFilter } from "@/components/brand/RetailerFilter";
 import { SaveButton } from "@/components/brand/SaveButton";
 import { getReference } from "@/lib/reference";
 import { briefToFit, cardData, parseFilters, search, type BriefRow, type Filters } from "@/lib/search";
-import { loadLiveListings } from "@/lib/search-data";
+import { loadLiveListings, loadRatings } from "@/lib/search-data";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -52,7 +52,8 @@ export default async function Find({ searchParams }: { searchParams: Promise<Rec
 
   // Analytics: what was searched (filters only) and which listings were shown.
   const filters = { states: f.state ? [f.state] : [], retailers: f.retailer ? [f.retailer] : [], channels: f.channel ? [f.channel] : [], categories: f.category ? [f.category] : [], distributors: f.distributor ? [f.distributor] : [] };
-  await Promise.all([
+  const [ratings] = await Promise.all([
+    loadRatings(r.items.map((i) => i.id)),
     db.rpc("log_search", { p_filters: filters }),
     r.items.length ? db.rpc("log_profile_events", { p_listings: r.items.map((i) => i.id), p_type: "search_impression" }) : null,
   ]);
@@ -130,7 +131,7 @@ export default async function Find({ searchParams }: { searchParams: Promise<Rec
               {r.items.map((l) => (
                 <li key={l.id} className="bench-result">
                   <Link href={`/brokers/${l.slug}`} className="bench-result_link" aria-label={`${l.name} profile`}>
-                    <ListingCard data={cardData(l, ref, conflictName)} />
+                    <ListingCard data={cardData(l, ref, conflictName, ratings.get(l.id))} />
                   </Link>
                   <div className="bench-result_actions">
                     <SaveButton listingId={l.id} name={l.name} initial={saved.has(l.id)} signedIn={!!session} isBrand={isBrand} next={nextPath} />

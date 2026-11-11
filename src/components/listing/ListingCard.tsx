@@ -1,3 +1,4 @@
+import { RatingSummary } from "@/components/reviews/Stars";
 import { FREQ_LABEL, type Freq } from "@/lib/coverage";
 
 export type ListingCardData = {
@@ -11,6 +12,7 @@ export type ListingCardData = {
   notTakingNewLines?: boolean;
   fit?: { score: number; reasons: string[] } | null;
   conflict?: string | null;
+  rating?: { average: number; count: number } | null;
 };
 
 /** The public profile card. Used by the builder preview and by search results. */
@@ -30,6 +32,7 @@ export function ListingCard({ data, headingLevel = 3 }: { data: ListingCardData;
         <div style={{ minWidth: 0 }}>
           <H className="bench-lcard_name">{data.name || "Your brokerage"}</H>
           <p className="bench-small bench-muted">{[data.hq, data.coverage].filter(Boolean).join(" · ")}</p>
+          {data.rating && <div className="bench-small"><RatingSummary average={data.rating.average} count={data.rating.count} compact /></div>}
         </div>
         {data.fit && <div className="bench-lcard_fit" title="Fit to your brief"><b>{data.fit.score}</b><span>fit</span></div>}
       </div>

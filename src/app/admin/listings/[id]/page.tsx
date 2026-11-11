@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { editListing, setComped, setPaused, setSuspended, updateReference } from "../../actions";
+import { BrandRefs } from "../../BrandRefs";
 import { Flash, type FlashParams } from "../../Flash";
 import { fmtDate, fmtDateTime, requireAdmin } from "@/lib/admin";
 
@@ -119,6 +120,8 @@ export default async function AdminListing({ params, searchParams }: { params: P
           </tbody>
         </table>
       </div>
+
+      <BrandRefs db={db} listingId={l.id} back={here} />
 
       <div className="bench-grid-2">
         <div className="bench-stack" style={{ gap: 8 }}>

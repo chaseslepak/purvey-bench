@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { decideVerification, saveChecklist, updateReference } from "../../actions";
+import { BrandRefs } from "../../BrandRefs";
 import { Flash, type FlashParams } from "../../Flash";
 import { fmtDateTime, requireAdmin } from "@/lib/admin";
 
@@ -90,6 +91,8 @@ export default async function VerificationReview({ params, searchParams }: { par
           </tbody>
         </table>
       </div>
+
+      <BrandRefs db={db} listingId={l.id} back={here} />
 
       {open ? (
         <div className="bench-grid-2">

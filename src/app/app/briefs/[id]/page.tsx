@@ -6,7 +6,7 @@ import { duplicateBrief, setArchived } from "../actions";
 import { ListingCard } from "@/components/listing/ListingCard";
 import { getReference } from "@/lib/reference";
 import { briefToFit, cardData, search, type BriefRow } from "@/lib/search";
-import { loadLiveListings } from "@/lib/search-data";
+import { loadLiveListings, loadRatings } from "@/lib/search-data";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -25,6 +25,7 @@ export default async function BriefPage({ params }: { params: Promise<{ id: stri
   const b = brief as BriefRow;
   const fit = briefToFit(b, ref);
   const ranked = search(all, { sort: "fit" }, ref, fit).items.filter((l) => l.fit).slice(0, 10);
+  const ratings = await loadRatings(ranked.map((l) => l.id));
   const conflictName = b.category_id ? ref.categories.find((c) => c.id === b.category_id)?.name : null;
   const anySet = fit.states.length || fit.retailers.length || fit.channels.length || fit.categoryId || fit.distributors.length;
 
@@ -57,7 +58,7 @@ export default async function BriefPage({ params }: { params: Promise<{ id: stri
           ) : (
             <ol className="bench-plainlist" style={{ gap: 12 }}>
               {ranked.map((l) => (
-                <li key={l.id}><Link href={`/brokers/${l.slug}`} className="bench-result_link"><ListingCard data={cardData(l, ref, conflictName)} /></Link></li>
+                <li key={l.id}><Link href={`/brokers/${l.slug}`} className="bench-result_link"><ListingCard data={cardData(l, ref, conflictName, ratings.get(l.id))} /></Link></li>
               ))}
             </ol>
           )}

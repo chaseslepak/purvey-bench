@@ -6,6 +6,9 @@ import { ContactBlock } from "@/components/brand/ContactBlock";
 import { SaveButton } from "@/components/brand/SaveButton";
 import { CoverageMap } from "@/components/listing/CoverageMap";
 import { DocLink } from "@/components/listing/DocLink";
+import { ReviewForm, type MyReview } from "@/components/reviews/ReviewForm";
+import { ReviewList, type PublicReview } from "@/components/reviews/ReviewList";
+import { RatingSummary } from "@/components/reviews/Stars";
 import { coverageSummary, FREQ_LABEL, type Freq } from "@/lib/coverage";
 import { getReference } from "@/lib/reference";
 import { loadListingBySlug } from "@/lib/search-data";
@@ -41,6 +44,16 @@ export default async function BrokerProfile({ params }: { params: Promise<{ slug
     session?.org?.id === l.orgId ? db.rpc("listing_display_state", { p_listing: l.id }) : Promise.resolve({ data: "live" }),
   ]);
   const own = session?.org?.id === l.orgId;
+  const isBrand = session?.org?.type === "brand";
+  const [{ data: rv }, mine, canReview, myRef] = await Promise.all([
+    db.rpc("listing_reviews", { p_listing: l.id }),
+    isBrand ? db.from("broker_reviews").select("rating, title, body, show_brand_name").eq("listing_id", l.id).eq("brand_org_id", session!.org!.id).maybeSingle() : Promise.resolve({ data: null }),
+    isBrand ? db.rpc("can_review", { p_listing: l.id }) : Promise.resolve({ data: false }),
+    isBrand ? db.from("brand_references").select("id").eq("listing_id", l.id).eq("brand_org_id", session!.org!.id).maybeSingle() : Promise.resolve({ data: null }),
+  ]);
+  const reviews = (rv ?? []) as PublicReview[];
+  const avg = reviews.length ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length : null;
+  const myReview: MyReview = mine.data ? { rating: mine.data.rating, title: mine.data.title, body: mine.data.body, showName: mine.data.show_brand_name } : null;
   if (!own) await db.rpc("log_profile_events", { p_listings: [l.id], p_type: "profile_view" });
 
   const viewer = !session ? "anon" : session.org?.type === "brand" ? "brand" : "broker";
@@ -64,6 +77,7 @@ export default async function BrokerProfile({ params }: { params: Promise<{ slug
             <div className="text_title">Food and beverage broker</div>
             <h1 className="bench-h-section" style={{ margin: 0 }}>{l.name}</h1>
             <p className="bench-muted" style={{ margin: 0 }}>{[l.hq, coverageSummary(l.states, ref.states, ref.regions)].filter(Boolean).join(" · ")}</p>
+            {avg != null && <a href="#reviews" className="bench-rating-link"><RatingSummary average={Math.round(avg * 10) / 10} count={reviews.length} /></a>}
             <div className="bench-row" style={{ gap: 6 }}>
               {l.verified && <span className="bench-tag is-blue">Verified by Purvey</span>}
               {l.notTakingNewLines && <span className="bench-tag">Not taking new lines</span>}
@@ -110,6 +124,17 @@ export default async function BrokerProfile({ params }: { params: Promise<{ slug
               {terms?.current_lines && (<><dt>Current lines</dt><dd style={{ whiteSpace: "pre-line" }}>{terms.current_lines}</dd></>)}
               {docs && docs.length > 0 && (<><dt>Documents</dt><dd className="bench-stack" style={{ gap: 4 }}>{docs.map((d) => <DocLink key={d.id} id={d.id} name={d.file_name} />)}</dd></>)}
             </dl>
+          </section>
+          <section id="reviews" className="bench-section bench-stack" aria-labelledby="rev-h">
+            <div className="bench-row" style={{ justifyContent: "space-between" }}>
+              <h2 id="rev-h" className="bench-h-section" style={{ fontSize: "1.75rem", margin: 0 }}>Reviews</h2>
+              {avg != null && <RatingSummary average={Math.round(avg * 10) / 10} count={reviews.length} />}
+            </div>
+            <p className="bench-small bench-muted" style={{ margin: 0 }}>Only brands {l.name} has worked with on Bench can review. Ratings never change search ranking.</p>
+            {isBrand && (canReview.data
+              ? <ReviewForm listingId={l.id} slug={l.slug} brokerName={l.name} brandName={session!.org!.name} existing={myReview} referenceGiven={!!myRef.data} />
+              : !myReview && <p className="bench-notice" style={{ margin: 0 }}>You can review {l.name} once they&rsquo;ve replied to a message from you.</p>)}
+            {reviews.length ? <ReviewList reviews={reviews} brokerName={l.name} slug={l.slug} ownListing={own} /> : <p className="bench-muted" style={{ margin: 0 }}>No reviews yet.</p>}
           </section>
         </div>
         <aside className="bench-stack bench-builder_side">

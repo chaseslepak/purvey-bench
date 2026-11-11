@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 
 const TABS = [
   ["/admin", "Overview"], ["/admin/listings", "Listings"], ["/admin/verification", "Verification"], ["/admin/brands", "Brands"],
-  ["/admin/requests", "Requests"], ["/admin/reports", "Reports"], ["/admin/lists", "Lists"], ["/admin/audit", "Audit log"],
+  ["/admin/requests", "Requests"], ["/admin/reports", "Reports"], ["/admin/reviews", "Reviews"], ["/admin/lists", "Lists"], ["/admin/audit", "Audit log"],
 ] as const;
 
 export function AdminTabs() {

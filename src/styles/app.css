@@ -334,3 +334,19 @@ a.bench-market_item:hover { border-color: var(--pv-ink); }
 /* Sign-up: show the list that matches the role picked in the form. */
 .bench-signup:has(input[name="role"][value="broker"]:checked) .bench-for-brands,
 .bench-signup:has(input[name="role"][value="brand"]:checked) .bench-for-brokers { display: none; }
+
+/* ---------- Reviews ---------- */
+.bench-stars { display: inline-flex; gap: 1px; line-height: 1; letter-spacing: 0; }
+.bench-star { position: relative; display: inline-block; color: var(--pv-line); }
+.bench-star_fill { position: absolute; inset: 0 auto 0 0; overflow: hidden; color: var(--pv-ink); white-space: nowrap; }
+.bench-rating { display: inline-flex; align-items: center; gap: 8px; font-size: 0.9375rem; }
+.bench-rating_num { font-weight: 600; }
+.bench-reviews { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.bench-review { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px; border: 1px solid var(--pv-line-soft); border-radius: 16px; background: var(--pv-white); }
+.bench-review_title { margin: 0; font: 600 1.0625rem/1.4 var(--pv-font-body); }
+.bench-review_reply { border-left: 3px solid var(--pv-line); padding: 4px 0 4px 14px; display: flex; flex-direction: column; gap: 4px; }
+.bench-starinput { border: 0; padding: 0; margin: 0; }
+.bench-starinput legend { margin-bottom: 6px; }
+.bench-starinput_star { cursor: pointer; font-size: 2rem; line-height: 1; color: var(--pv-line); padding: 0 2px; border-radius: 6px; }
+.bench-starinput_star.is-on { color: var(--pv-ink); }
+.bench-starinput_star:has(input:focus-visible) { outline: 0.125rem solid #4d65ff; outline-offset: 2px; }
