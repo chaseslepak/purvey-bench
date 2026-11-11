@@ -14,6 +14,7 @@ export async function BenchNav() {
         <Link href="/find" className="bench-subnav_link">Find brokers</Link>
         {session?.org?.type === "brand" && (
           <>
+            <Link href="/app/brand" className="bench-subnav_link">Brand profile</Link>
             <Link href="/app/briefs" className="bench-subnav_link">Briefs</Link>
             <Link href="/app/saved" className="bench-subnav_link">Saved</Link>
           </>

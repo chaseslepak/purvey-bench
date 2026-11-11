@@ -1,8 +1,8 @@
 import Link from "next/link";
 
-const TABS = [["", "Messages"], ["progress", "Progress"], ["toolbox", "Toolbox"], ["commissions", "Commissions"]] as const;
+const TABS = [["", "Messages"], ["brand", "Brand"], ["progress", "Progress"], ["toolbox", "Toolbox"], ["commissions", "Commissions"]] as const;
 
-export function ConversationHeader({ id, title, href, active }: { id: string; title: string; href: string | null; active: "" | "progress" | "toolbox" | "commissions" }) {
+export function ConversationHeader({ id, title, href, active }: { id: string; title: string; href: string | null; active: "" | "brand" | "progress" | "toolbox" | "commissions" }) {
   return (
     <>
       <section className="bench-section is-cream bench-stack" style={{ gap: 8 }}>

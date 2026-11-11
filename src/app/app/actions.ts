@@ -57,7 +57,7 @@ export async function completeOnboarding(_prev: FormState, form: FormData): Prom
   });
   if (error) return { error: error.message.includes("already belong") ? "You already belong to an organization." : "Something went wrong. Please try again." };
 
-  redirect(parsed.data.type === "broker" ? "/app?welcome=broker" : "/app?welcome=brand");
+  redirect(parsed.data.type === "broker" ? "/app?welcome=broker" : "/app/brand?welcome=1");
 }
 
 const inviteSchema = z.object({

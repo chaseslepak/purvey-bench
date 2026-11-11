@@ -39,7 +39,7 @@ export async function signUpAndOnboard(page: Page, m: Made, type: "brand" | "bro
   await page.fill("#name", `E2E ${type}`);
   await page.fill("#orgName", orgName);
   await page.locator("main form.bench-form button[type=submit]").click();
-  await page.waitForURL(/\/app\?welcome=/);
+  await page.waitForURL(/\/app(\/brand)?\?welcome=/);
   const { data: org } = await db.from("organizations").select("id").eq("name", orgName).single();
   m.orgIds.push(org!.id);
   return { email, userId: u.user.id, orgId: org!.id as string };

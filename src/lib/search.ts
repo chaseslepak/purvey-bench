@@ -16,7 +16,7 @@ export const filtersSchema = z.object({
   verified: z.literal("1").optional().catch(undefined),
   taking: z.literal("1").optional().catch(undefined),
   sort: z.enum(["fit", "verified", "recent"]).optional().catch(undefined),
-  brief: z.uuid().optional().catch(undefined),
+  brief: z.union([z.uuid(), z.literal("profile")]).optional().catch(undefined),
   page: z.coerce.number().int().min(1).max(500).optional().catch(undefined),
 });
 export type Filters = z.infer<typeof filtersSchema>;

@@ -6,6 +6,9 @@ import { SaveButton } from "@/components/brand/SaveButton";
 import { getReference } from "@/lib/reference";
 import { briefToFit, cardData, parseFilters, search, type BriefRow, type Filters } from "@/lib/search";
 import { loadLiveListings, loadRatings } from "@/lib/search-data";
+import { loadBrand } from "@/lib/brand-data";
+import { profileToFit } from "@/lib/brand-profile";
+import type { FitBrief } from "@/lib/fit";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -44,9 +47,18 @@ export default async function Find({ searchParams }: { searchParams: Promise<Rec
   // Default to the most recently updated brief; "none" turns it off.
   const raw = await searchParams;
   const briefOff = raw.brief === "none";
-  const brief = briefOff ? null : briefs.find((b) => b.id === f.brief) ?? briefs[0] ?? null;
-  const fitBrief = brief ? briefToFit(brief, ref) : null;
-  const conflictName = brief?.category_id ? ref.categories.find((c) => c.id === brief.category_id)?.name : null;
+  // The brand profile's goals rank results when picked, or when the brand has no brief.
+  let profileFit: FitBrief | null = null;
+  let profileCategory: number | null = null;
+  if (isBrand) {
+    const b = await loadBrand(db, session!.org!.id);
+    if (b) { profileFit = profileToFit(b.profile, ref.states); profileCategory = b.profile.categories[0] ?? null; }
+  }
+  const useProfile = !briefOff && !!profileFit && (f.brief === "profile" || (!f.brief && !briefs.length));
+  const brief = briefOff || useProfile ? null : briefs.find((b) => b.id === f.brief) ?? briefs[0] ?? null;
+  const fitBrief = useProfile ? profileFit : brief ? briefToFit(brief, ref) : null;
+  const conflictId = useProfile ? profileCategory : brief?.category_id;
+  const conflictName = conflictId ? ref.categories.find((c) => c.id === conflictId)?.name : null;
 
   const r = search(all, f, ref, fitBrief);
 
@@ -84,11 +96,12 @@ export default async function Find({ searchParams }: { searchParams: Promise<Rec
           {isBrand && (
             <div className="bench-field">
               <label htmlFor="f-brief" className="bench-label">Rank against brief</label>
-              <select id="f-brief" name="brief" className="bench-input" defaultValue={briefOff ? "none" : brief?.id ?? "none"}>
-                <option value="none">No brief</option>
+              <select id="f-brief" name="brief" className="bench-input" defaultValue={briefOff ? "none" : useProfile ? "profile" : brief?.id ?? "none"}>
+                {profileFit && <option value="profile">Your brand profile</option>}
                 {briefs.map((b) => <option key={b.id} value={b.id}>{b.title}</option>)}
+                <option value="none">No ranking</option>
               </select>
-              {!briefs.length && <p className="bench-hint" style={{ margin: 0 }}><Link className="bench-link" href="/app/briefs">Write a brief</Link> to rank brokers by fit.</p>}
+              {!briefs.length && !profileFit && <p className="bench-hint" style={{ margin: 0 }}>Add <Link className="bench-link" href="/app/brand?step=goals">where you want to be</Link> to your brand profile to rank brokers by fit.</p>}
             </div>
           )}
           {select("state", "State", ref.states.map((s) => ({ value: s.code, label: s.name })))}
@@ -109,7 +122,7 @@ export default async function Find({ searchParams }: { searchParams: Promise<Rec
         <section className="bench-stack" aria-labelledby="results-h" style={{ minWidth: 0 }}>
           <div className="bench-row bench-toolbar" style={{ justifyContent: "space-between" }}>
             <h2 id="results-h" className="bench-eyebrow" style={{ margin: 0 }} aria-live="polite">
-              {r.total} broker{r.total === 1 ? "" : "s"}{brief ? ` · ranked for “${brief.title}”` : ""}
+              {r.total} broker{r.total === 1 ? "" : "s"}{useProfile ? " · ranked for your brand profile" : brief ? ` · ranked for “${brief.title}”` : ""}
             </h2>
             {!session && <Link className="bench-small bench-link" href="/sign-up?role=brand">Create a free account to see contact details</Link>}
           </div>

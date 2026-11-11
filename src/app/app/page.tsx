@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { loadBrand } from "@/lib/brand-data";
+import { brandChecklist, completeness } from "@/lib/brand-profile";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -32,6 +34,15 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     }
     const { data: subscription } = await supabase.from("subscriptions").select("current_period_end, comped").eq("org_id", session.org.id).maybeSingle();
     sub = subscription;
+  }
+
+  let brandStrength: { pct: number; next: string | null } | null = null;
+  if (session.org.type === "brand") {
+    const b = await loadBrand(supabase, session.org.id);
+    if (b) {
+      const items = brandChecklist(b.profile, { products: b.products.length, files: b.files.length, website: !!b.org.website });
+      brandStrength = { pct: completeness(items), next: items.find((i) => !i.done)?.label.toLowerCase() ?? null };
+    }
   }
 
   return (
@@ -77,6 +88,28 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
           <Link href="/app/listing" className="button w-button">Edit your listing</Link>
           <Link href="/app/billing" className="button bench-btn-ghost w-button">Billing</Link>
         </div>
+      )}
+
+      {brandStrength && (
+        <section className="bench-grid-3">
+          <div className="bench-card bench-stack">
+            <div className="bench-eyebrow">Brand profile</div>
+            <div className="bench-h-section">{brandStrength.pct}%</div>
+            <div className="bench-progress" aria-hidden="true" style={{ marginTop: 0 }}><span style={{ width: `${brandStrength.pct}%` }} /></div>
+            <p className="bench-small bench-muted" style={{ margin: 0 }}>{brandStrength.next ? `Next: ${brandStrength.next}.` : "Complete. Brokers you message see all of it."}</p>
+            <div><Link href="/app/brand" className="button is-small w-button">{brandStrength.pct < 100 ? "Finish your profile" : "Edit your profile"}</Link></div>
+          </div>
+          <div className="bench-card bench-stack">
+            <div className="bench-eyebrow">Find brokers</div>
+            <p className="bench-small" style={{ margin: 0 }}>Search is ranked by fit to your profile&rsquo;s goals, or to a brief.</p>
+            <div><Link href="/find" className="button is-small bench-btn-ghost w-button">Search brokers</Link></div>
+          </div>
+          <div className="bench-card bench-stack">
+            <div className="bench-eyebrow">Data room</div>
+            <p className="bench-small" style={{ margin: 0 }}>Sell sheets, decks and photos brokers can open once you message them.</p>
+            <div><Link href="/app/brand?step=dataroom" className="button is-small bench-btn-ghost w-button">Open data room</Link></div>
+          </div>
+        </section>
       )}
 
       <section className="bench-section bench-stack">
