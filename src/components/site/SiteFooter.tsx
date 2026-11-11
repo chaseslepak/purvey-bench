@@ -14,15 +14,16 @@ export function SiteFooter() {
             </div>
             <div className="footer_column scroll-into-view">
               <a href={siteLinks.home} className="footer_link">Home</a>
-              <a href={siteLinks.about} className="footer_link">About Us</a>
+              <a href={siteLinks.services} className="footer_link">Services</a>
             </div>
             <div className="footer_column scroll-into-view">
-              <a href={siteLinks.services} className="footer_link">Services</a>
-              <a href={siteLinks.clientPortal} className="footer_link">Client Portal</a>
+              <a href={siteLinks.about} className="footer_link">About</a>
+              <a href={siteLinks.blog} className="footer_link">Insights</a>
             </div>
             <div className="footer_column scroll-into-view">
               <a href={siteLinks.contact} className="footer_link">Contact</a>
-              <a href={siteLinks.blog} className="footer_link">Blogs</a>
+              <a href={siteLinks.privacy} className="footer_link">Privacy Policy</a>
+              <a href={siteLinks.clientPortal} className="footer_link">Client Portal</a>
             </div>
           </div>
           <div className="section-gap-large" />

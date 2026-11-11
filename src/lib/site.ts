@@ -20,6 +20,7 @@ export const siteLinks = {
   contact: `${MAIN_SITE}/contact/contact`,
   blog: `${MAIN_SITE}/blog`,
   services: `${MAIN_SITE}/services`,
+  privacy: `${MAIN_SITE}/privacy-policy`,
   clientPortal: "https://dashboard.assembly.com/",
 } as const;
 

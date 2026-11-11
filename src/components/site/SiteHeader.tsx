@@ -1,33 +1,23 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { LOGO_SRCSET, LOGO_URL, siteLinks } from "@/lib/site";
 
 /**
  * The purveycpg.com navbar, rebuilt with the exact Webflow markup and
  * classes so the vendored stylesheet renders it identically. webflow.js is
- * not loaded; the menu button and MORE dropdown toggle the same `w--open`
+ * not loaded; the menu button toggles the same `w--open`
  * and `data-nav-menu-open` hooks that webflow.js would set.
  */
 export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
-  const moreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function onDocClick(e: MouseEvent) {
-      if (moreRef.current && !moreRef.current.contains(e.target as Node)) setMoreOpen(false);
-    }
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        setMoreOpen(false);
-        setMenuOpen(false);
-      }
+      if (e.key === "Escape") setMenuOpen(false);
     }
-    document.addEventListener("click", onDocClick);
     document.addEventListener("keydown", onKey);
     return () => {
-      document.removeEventListener("click", onDocClick);
       document.removeEventListener("keydown", onKey);
     };
   }, []);
@@ -57,43 +47,15 @@ export function SiteHeader() {
                 >
                   <div className="navbar_list">
                     <a href={siteLinks.home} className="nav_links w-nav-link">Home</a>
+                    <a href={siteLinks.services} className="nav_links w-nav-link">Services</a>
                     <a href={siteLinks.about} className="nav_links w-nav-link">About</a>
-                    <a href={siteLinks.contact} className="nav_links w-nav-link">Contact</a>
-                    <div ref={moreRef} className={`nav_dropdown w-dropdown${moreOpen ? " w--open" : ""}`}>
-                      <button
-                        type="button"
-                        className={`nav_links is-dropdown w-dropdown-toggle${moreOpen ? " w--open" : ""}`}
-                        aria-haspopup="true"
-                        aria-expanded={moreOpen}
-                        aria-controls="site-more"
-                        onClick={() => setMoreOpen((v) => !v)}
-                        style={{ background: "transparent", border: 0 }}
-                      >
-                        <div className="text-block">MORE</div>
-                        <div className="nav_link-icon w-icon-dropdown-toggle" aria-hidden="true" />
-                      </button>
-                      <nav id="site-more" className={`nav_link-dropdown w-dropdown-list${moreOpen ? " w--open" : ""}`}>
-                        <div className="nav_dropdown-wrap">
-                          <div className="nav_dropdown-content">
-                            <div className="nav_dropdown-column">
-                              <a href={siteLinks.blog} className="nav_dropdown-link w-dropdown-link">Blog</a>
-                            </div>
-                            <div className="nav_dropdown-column">
-                              <a href={siteLinks.services} className="nav_dropdown-link w-dropdown-link">Services</a>
-                            </div>
-                            <div className="nav_dropdown-column">
-                              <a href={siteLinks.clientPortal} className="nav_dropdown-link w-dropdown-link">CLIENT PORTAL</a>
-                            </div>
-                          </div>
-                        </div>
-                      </nav>
-                    </div>
+                    <a href={siteLinks.blog} className="nav_link-insights">Insights</a>
                   </div>
                 </nav>
               </div>
               <div className="nav_buttons-wrap">
                 <div className="login-wrap hide-mobile-landscape">
-                  <a href={siteLinks.contact} className="button is-small w-button">contact</a>
+                  <a href={siteLinks.contact} className="button is-small w-button">Book a strategy call</a>
                 </div>
                 <button
                   type="button"
