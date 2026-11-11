@@ -4,12 +4,16 @@ import { GoogleButton } from "@/components/auth/GoogleButton";
 import { SignUpForm } from "@/components/auth/SignUpForm";
 import { MarketList } from "@/components/site/MarketList";
 import { env } from "@/lib/env";
+import { safeNext } from "@/lib/redirect";
 import { loadCoverage, loadDemand } from "@/lib/market";
 
 export const metadata: Metadata = { title: "Create your account" };
 
-export default async function SignUp({ searchParams }: { searchParams: Promise<{ role?: string }> }) {
-  const { role } = await searchParams;
+export default async function SignUp({ searchParams }: { searchParams: Promise<{ role?: string; next?: string }> }) {
+  const { role, next: rawNext } = await searchParams;
+  // Where to land after onboarding, e.g. back to the broker a brand wanted to message.
+  const next = rawNext && safeNext(rawNext, "").startsWith("/") ? safeNext(rawNext) : undefined;
+  const onboarding = `/app/onboarding${next ? `?next=${encodeURIComponent(next)}` : ""}`;
   const initialRole = role === "brand" || role === "broker" ? role : undefined;
   const [demand, coverage] = await Promise.all([loadDemand(16), loadCoverage(16)]);
   return (
@@ -32,11 +36,11 @@ export default async function SignUp({ searchParams }: { searchParams: Promise<{
           </div>
         </div>
         <div className="bench-card is-white bench-stack">
-          <SignUpForm initialRole={initialRole} turnstileSiteKey={env.turnstileSiteKey} />
+          <SignUpForm initialRole={initialRole} turnstileSiteKey={env.turnstileSiteKey} next={next} />
           <div className="bench-row" style={{ justifyContent: "center" }}><span className="bench-small bench-muted">or</span></div>
-          <GoogleButton next="/app/onboarding" label="Sign up with Google" />
+          <GoogleButton next={onboarding} label="Sign up with Google" />
           <p className="bench-small">
-            Already have an account? <Link className="bench-link" href="/sign-in">Sign in</Link>.
+            Already have an account? <Link className="bench-link" href={next ? `/sign-in?next=${encodeURIComponent(next)}` : "/sign-in"}>Sign in</Link>.
           </p>
         </div>
       </div>

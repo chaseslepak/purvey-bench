@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { signUp, type AuthFormState } from "@/app/auth/actions";
 import { Turnstile, useTurnstileReady } from "@/components/ui/Turnstile";
 
-export function SignUpForm({ initialRole, turnstileSiteKey }: { initialRole?: "brand" | "broker"; turnstileSiteKey: string }) {
+export function SignUpForm({ initialRole, turnstileSiteKey, next }: { initialRole?: "brand" | "broker"; turnstileSiteKey: string; next?: string }) {
   const [state, action, pending] = useActionState<AuthFormState, FormData>(signUp, undefined);
   const ts = useTurnstileReady(turnstileSiteKey);
   const [role, setRole] = useState<"brand" | "broker" | undefined>(initialRole);
@@ -13,6 +13,7 @@ export function SignUpForm({ initialRole, turnstileSiteKey }: { initialRole?: "b
 
   return (
     <form action={action} className="bench-form" noValidate>
+      {next && <input type="hidden" name="next" value={next} />}
       <fieldset className="bench-field" style={{ border: 0, padding: 0, margin: 0 }}>
         <legend className="bench-label" style={{ marginBottom: 8 }}>I am a…</legend>
         <div className="bench-choice-group">
@@ -62,7 +63,7 @@ export function SignUpForm({ initialRole, turnstileSiteKey }: { initialRole?: "b
       {state?.error && <p className="bench-notice is-error" role="alert">{state.error}</p>}
 
       <button type="submit" className="button bench-btn-block w-button" disabled={pending || !ts.ready}>
-        {pending ? "Sending…" : "Create my free account"}
+        {pending ? "Sending…" : role === "broker" ? "Create my account" : "Create my free account"}
       </button>
       <p className="bench-small bench-muted">
         We&rsquo;ll email you a link to finish signing up. By continuing you agree to the{" "}

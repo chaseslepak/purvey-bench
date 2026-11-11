@@ -15,11 +15,11 @@ export const metadata: Metadata = { title: "Your listing", robots: { index: fals
 
 const s = (v: unknown) => (v == null ? "" : String(v));
 
-export default async function ListingPage({ searchParams }: { searchParams: Promise<{ checkout?: string; session_id?: string }> }) {
+export default async function ListingPage({ searchParams }: { searchParams: Promise<{ checkout?: string; session_id?: string; welcome?: string }> }) {
   const session = await getSession();
   if (!session?.org) redirect("/app/onboarding");
   if (session.org.type !== "broker") redirect("/app");
-  const { checkout, session_id } = await searchParams;
+  const { checkout, session_id, welcome } = await searchParams;
 
   // Returning from Stripe Checkout: confirm the session belongs to this org and
   // sync right away, so the listing goes live even before the webhook lands.
@@ -34,6 +34,8 @@ export default async function ListingPage({ searchParams }: { searchParams: Prom
     } catch {
       banner = "Payment received. It can take a minute to confirm; refresh if this page still asks for a plan.";
     }
+  } else if (welcome) {
+    banner = "Welcome to Purvey Bench. Your account is ready.";
   } else if (checkout === "cancelled") {
     banner = "Checkout was cancelled. Nothing was charged.";
   }

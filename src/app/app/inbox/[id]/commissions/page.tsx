@@ -3,12 +3,13 @@ import { AuditRequest } from "./AuditRequest";
 import { Commissions, type Period, type Terms } from "./Commissions";
 import { ConversationHeader } from "@/components/inbox/ConversationHeader";
 import { loadConversation } from "@/lib/inbox/conversation";
+import { beforeAgreement, DEAL_NOTE } from "../deal-stage";
 
 export const metadata: Metadata = { title: "Commissions", robots: { index: false } };
 
 export default async function CommissionsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const { db, c, amBrand, other, me } = await loadConversation(id);
+  const { session, db, c, amBrand, other, me } = await loadConversation(id);
   const [{ data: t }, { data: ps }, { data: audit }] = await Promise.all([
     db.from("deal_terms").select("*").eq("conversation_id", c.id).maybeSingle(),
     db.from("commission_periods").select("*").eq("conversation_id", c.id).order("period", { ascending: false }),
@@ -24,7 +25,7 @@ export default async function CommissionsPage({ params }: { params: Promise<{ id
   const terms: Terms = t ? { rate: Number(t.rate), retainer: Number(t.retainer), retainerFrom: t.retainer_from, retainerTo: t.retainer_to, dueDays: t.invoice_due_days, notes: t.notes } : null;
   return (
     <>
-      <ConversationHeader id={c.id} title={other?.name ?? "Conversation"} href={amBrand && other ? `/brokers/${other.slug}` : null} active="commissions" />
+      <ConversationHeader id={c.id} title={other?.name ?? "Conversation"} href={amBrand && other ? `/brokers/${other.slug}` : null} isBrand={amBrand} active="commissions" note={(await beforeAgreement(db, c.id, session.org!.id, amBrand)) ? DEAL_NOTE : null} />
       <Commissions id={c.id} isBrand={amBrand} otherName={other?.name ?? "the other side"} myName={me?.name ?? "Your team"} terms={terms} periods={periods} />
       <AuditRequest id={c.id} existing={audit} />
     </>

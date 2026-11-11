@@ -14,7 +14,7 @@ export default async function ConversationBrand({ params }: { params: Promise<{ 
   const [b, ref] = await Promise.all([loadBrand(db, c.brand_org_id), getReference()]);
   return (
     <>
-      <ConversationHeader id={c.id} title={other?.name ?? "Conversation"} href={amBrand && other ? `/brokers/${other.slug}` : null} active="brand" />
+      <ConversationHeader id={c.id} title={other?.name ?? "Conversation"} href={amBrand && other ? `/brokers/${other.slug}` : null} isBrand={amBrand} active="brand" />
       {amBrand && <p className="bench-notice bench-small" style={{ margin: 0 }}>This is your brand profile as {other?.name ?? "the broker"} sees it. <a className="bench-link" href="/app/brand">Edit it</a>.</p>}
       {b ? <BrandView b={b} refs={ref} /> : <p className="bench-muted">This brand hasn&rsquo;t set up its profile yet.</p>}
     </>

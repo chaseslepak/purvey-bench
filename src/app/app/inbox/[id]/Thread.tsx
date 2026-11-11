@@ -191,14 +191,14 @@ export function Thread(p: ThreadProps) {
               <div className="bench-field" style={{ flex: 1 }}>
                 <label htmlFor="composer" className="bench-sr-only">Message</label>
                 <textarea id="composer" className="bench-input" style={{ minHeight: 64 }} value={text} maxLength={10000} placeholder="Write a message…"
-                  onChange={(e) => onType(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) send(); }} />
+                  onChange={(e) => onType(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && !pending && !uploading && (text.trim() || files.length)) send(); }} />
               </div>
               <div className="bench-row" style={{ flexWrap: "nowrap" }}>
                 <label className="button bench-btn-ghost is-small w-button" style={{ cursor: "pointer" }}>
                   {uploading ? "Uploading…" : "Attach"}
                   <input type="file" className="bench-sr-only" multiple accept="application/pdf,image/png,image/jpeg,image/webp" onChange={(e) => { void upload(e.target.files); e.target.value = ""; }} />
                 </label>
-                <button type="button" className="button is-small w-button" onClick={send} disabled={pending || uploading}>Send</button>
+                <button type="button" className="button is-small w-button" onClick={send} disabled={pending || uploading || (!text.trim() && files.length === 0)}>{pending ? "Sending…" : "Send"}</button>
               </div>
             </div>
             {p.templates.length > 0 && (
@@ -221,7 +221,9 @@ function SidePanel(p: ThreadProps & { refresh: () => void }) {
   const [note, setNote] = useState("");
   const [mode, setMode] = useState<"none" | "decline" | "report">("none");
   const [reason, setReason] = useState("not_a_fit");
-  const [detail, setDetail] = useState("");
+  const [declineNote, setDeclineNote] = useState("");
+  const [reportText, setReportText] = useState("");
+  const [formMsg, setFormMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const set = async (patch: Parameters<typeof updateSide>[1], done: string) => { const r = await updateSide(p.conversationId, patch); setMsg(r.ok ? done : r.error ?? null); p.refresh(); };
   return (
     <aside className="bench-stack bench-builder_side">
@@ -231,6 +233,7 @@ function SidePanel(p: ThreadProps & { refresh: () => void }) {
           <label className="bench-label" htmlFor="side-stage">Stage</label>
           <select id="side-stage" className="bench-input" value={p.side.stage ?? ""}
             onChange={(e) => void set(p.myOrgType === "brand" ? { brand_stage: e.target.value as never } : { broker_stage: e.target.value as never }, "Stage updated.")}>
+            {p.side.stage == null && <option value="" disabled>Not set</option>}
             {p.stages.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
           </select>
           <p className="bench-hint" style={{ margin: 0 }}>{p.otherName} never sees your stage.</p>
@@ -270,28 +273,36 @@ function SidePanel(p: ThreadProps & { refresh: () => void }) {
       <div className="bench-card is-white bench-stack" style={{ gap: 10 }}>
         {mode === "none" && (
           <div className="bench-row" style={{ gap: 8 }}>
-            {p.myOrgType === "broker" && !p.declined && <button type="button" className="button bench-btn-ghost is-small w-button" onClick={() => setMode("decline")}>Decline</button>}
-            <button type="button" className="button bench-btn-ghost is-small w-button" onClick={() => setMode("report")}>Report or block</button>
+            {p.myOrgType === "broker" && !p.declined && <button type="button" className="button bench-btn-ghost is-small w-button" onClick={() => { setFormMsg(null); setMode("decline"); }}>Decline</button>}
+            <button type="button" className="button bench-btn-ghost is-small w-button" onClick={() => { setFormMsg(null); setMode("report"); }}>Report or block</button>
           </div>
         )}
+        {mode === "none" && formMsg && <p className={`bench-notice${formMsg.ok ? "" : " is-error"}`} role={formMsg.ok ? "status" : "alert"} style={{ margin: 0 }}>{formMsg.text}</p>}
         {mode === "decline" && (
-          <form className="bench-stack" style={{ gap: 10 }} onSubmit={async (e) => { e.preventDefault(); const r = await declineConversation(p.conversationId, reason, detail); if (r.ok) p.refresh(); else setMsg(r.error ?? null); }}>
+          <form className="bench-stack" style={{ gap: 10 }} onSubmit={async (e) => { e.preventDefault(); const r = await declineConversation(p.conversationId, reason, declineNote); if (r.ok) { setFormMsg({ ok: true, text: "Conversation declined." }); setMode("none"); p.refresh(); } else setFormMsg({ ok: false, text: r.error ?? "Couldn't decline. Try again." }); }}>
             <label className="bench-label" htmlFor="decline-reason">Reason</label>
             <select id="decline-reason" className="bench-input" value={reason} onChange={(e) => setReason(e.target.value)}>{DECLINE_REASONS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
             <label className="bench-label" htmlFor="decline-note">Note to the brand (optional)</label>
-            <textarea id="decline-note" className="bench-input" style={{ minHeight: 70 }} value={detail} maxLength={1000} onChange={(e) => setDetail(e.target.value)} />
+            <textarea id="decline-note" className="bench-input" style={{ minHeight: 70 }} value={declineNote} maxLength={1000} onChange={(e) => setDeclineNote(e.target.value)} />
             <p className="bench-hint" style={{ margin: 0 }}>The brand sees a polite closed message. The thread closes for both sides.</p>
+            {formMsg && !formMsg.ok && <p className="bench-notice is-error" role="alert" style={{ margin: 0 }}>{formMsg.text}</p>}
             <div className="bench-row"><button className="button is-small w-button" type="submit">Decline conversation</button><button className="button bench-btn-ghost is-small w-button" type="button" onClick={() => setMode("none")}>Cancel</button></div>
           </form>
         )}
         {mode === "report" && (
-          <form className="bench-stack" style={{ gap: 10 }} onSubmit={async (e) => { e.preventDefault(); const r = await reportConversation(p.conversationId, detail); setMsg(r.ok ? "Report sent to Purvey." : r.error ?? null); if (r.ok) setMode("none"); }}>
+          <form className="bench-stack" style={{ gap: 10 }} onSubmit={async (e) => { e.preventDefault(); const r = await reportConversation(p.conversationId, reportText); if (r.ok) { setFormMsg({ ok: true, text: "Report sent to Purvey." }); setReportText(""); setMode("none"); } else setFormMsg({ ok: false, text: r.error ?? "Couldn't send the report. Try again." }); }}>
             <label className="bench-label" htmlFor="report-reason">What happened?</label>
-            <textarea id="report-reason" className="bench-input" style={{ minHeight: 70 }} value={detail} maxLength={2000} onChange={(e) => setDetail(e.target.value)} />
+            <textarea id="report-reason" className="bench-input" style={{ minHeight: 70 }} value={reportText} maxLength={2000} onChange={(e) => setReportText(e.target.value)} />
             <p className="bench-hint" style={{ margin: 0 }}>Purvey can read this thread only after a report, and every read is logged.</p>
+            {formMsg && !formMsg.ok && <p className="bench-notice is-error" role="alert" style={{ margin: 0 }}>{formMsg.text}</p>}
             <div className="bench-row">
               <button className="button is-small w-button" type="submit">Send report</button>
-              <button className="button bench-btn-ghost is-small w-button" type="button" onClick={async () => { const r = await blockOrg(p.conversationId, p.otherOrgId); setMsg(r.ok ? `Blocked ${p.otherName}. They can't message you.` : r.error ?? null); setMode("none"); p.refresh(); }}>Block {p.otherName}</button>
+              <button className="button bench-btn-ghost is-small w-button" type="button" onClick={async () => {
+                if (!window.confirm(`Block ${p.otherName}? They won't be able to message your team, and this conversation closes. Purvey can undo this if you ask.`)) return;
+                const r = await blockOrg(p.conversationId, p.otherOrgId);
+                if (r.ok) { setFormMsg({ ok: true, text: `Blocked ${p.otherName}. They can't message you.` }); setMode("none"); p.refresh(); }
+                else setFormMsg({ ok: false, text: r.error ?? "Couldn't block. Try again." });
+              }}>Block {p.otherName}</button>
               <button className="button bench-btn-ghost is-small w-button" type="button" onClick={() => setMode("none")}>Cancel</button>
             </div>
           </form>

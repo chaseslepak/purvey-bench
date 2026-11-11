@@ -4,6 +4,7 @@ import { ListingCard } from "@/components/listing/ListingCard";
 import { RetailerFilter } from "@/components/brand/RetailerFilter";
 import { SaveButton } from "@/components/brand/SaveButton";
 import { getReference } from "@/lib/reference";
+import { FilterPanel } from "./FilterPanel";
 import { briefToFit, cardData, parseFilters, search, type BriefRow, type Filters } from "@/lib/search";
 import { loadLiveListings, loadRatings } from "@/lib/search-data";
 import { loadBrand } from "@/lib/brand-data";
@@ -64,11 +65,14 @@ export default async function Find({ searchParams }: { searchParams: Promise<Rec
 
   // Analytics: what was searched (filters only) and which listings were shown.
   const filters = { states: f.state ? [f.state] : [], retailers: f.retailer ? [f.retailer] : [], channels: f.channel ? [f.channel] : [], categories: f.category ? [f.category] : [], distributors: f.distributor ? [f.distributor] : [] };
+  // Count brand and visitor searches once: not brokers browsing, not later pages of the same search.
+  const logIt = session?.org?.type !== "broker" && !raw.page;
   const [ratings] = await Promise.all([
     loadRatings(r.items.map((i) => i.id)),
-    db.rpc("log_search", { p_filters: filters }),
-    r.items.length ? db.rpc("log_profile_events", { p_listings: r.items.map((i) => i.id), p_type: "search_impression" }) : null,
+    logIt ? db.rpc("log_search", { p_filters: filters }) : null,
+    logIt && r.items.length ? db.rpc("log_profile_events", { p_listings: r.items.map((i) => i.id), p_type: "search_impression" }) : null,
   ]);
+  const activeFilters = [f.state, f.region, f.retailer, f.channel, f.category, f.distributor, f.verified, f.taking].filter((v) => v !== undefined && v !== "" && v !== 0).length;
 
   const nextPath = href(f, {});
   const select = (name: keyof Filters, label: string, options: { value: string | number; label: string }[], anyLabel: string | null = "Any") => (
@@ -93,6 +97,7 @@ export default async function Find({ searchParams }: { searchParams: Promise<Rec
 
       <div className="bench-find">
         <form className="bench-section bench-stack bench-find_filters" method="get" action="/find" aria-label="Search filters">
+          <FilterPanel active={activeFilters}>
           {isBrand && (
             <div className="bench-field">
               <label htmlFor="f-brief" className="bench-label">Rank against brief</label>
@@ -117,6 +122,7 @@ export default async function Find({ searchParams }: { searchParams: Promise<Rec
             <button type="submit" className="button w-button">Search</button>
             <Link href="/find" className="bench-link bench-small">Clear filters</Link>
           </div>
+          </FilterPanel>
         </form>
 
         <section className="bench-stack" aria-labelledby="results-h" style={{ minWidth: 0 }}>
@@ -129,8 +135,10 @@ export default async function Find({ searchParams }: { searchParams: Promise<Rec
 
           {r.total === 0 ? (
             <div className="bench-section is-cream bench-stack">
-              <h3 className="bench-h-section" style={{ fontSize: "1.5rem" }}>No brokers match all of these filters</h3>
-              {r.loosen ? (
+              <h3 className="bench-h-section" style={{ fontSize: "1.5rem" }}>{activeFilters || !all.length ? (all.length ? "No brokers match all of these filters" : "Brokers are joining Bench now") : "No brokers to show yet"}</h3>
+              {!all.length ? (
+                <p style={{ margin: 0 }}>New brokerages are listing every week. <Link className="bench-link" href="/for-brokers">Are you a broker? List your brokerage</Link>.</p>
+              ) : r.loosen ? (
                 <p style={{ margin: 0 }}>
                   Remove the <strong>{LOOSEN_LABEL[r.loosen.key]}</strong> filter to see {r.loosen.count} broker{r.loosen.count === 1 ? "" : "s"}.{" "}
                   <Link className="bench-link" href={href(f, { [r.loosen.key]: undefined, page: undefined })}>Remove it</Link>
@@ -143,7 +151,7 @@ export default async function Find({ searchParams }: { searchParams: Promise<Rec
             <ul className="bench-results">
               {r.items.map((l) => (
                 <li key={l.id} className="bench-result">
-                  <Link href={`/brokers/${l.slug}`} className="bench-result_link" aria-label={`${l.name} profile`}>
+                  <Link href={`/brokers/${l.slug}`} className="bench-result_link">
                     <ListingCard data={cardData(l, ref, conflictName, ratings.get(l.id))} />
                   </Link>
                   <div className="bench-result_actions">

@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { OnboardingForm } from "./OnboardingForm";
+import { safeNext } from "@/lib/redirect";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Set up your account", robots: { index: false } };
 
-export default async function Onboarding() {
+export default async function Onboarding({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
   const session = await getSession();
   if (!session) redirect("/sign-in");
   if (session.org) redirect("/app");
+  const n = safeNext((await searchParams).next, "");
+  const next = n.startsWith("/") ? n : undefined;
   const supabase = await createClient();
   const { data: states } = await supabase.from("states").select("code, name").order("name");
   const m = session.metadata;
@@ -28,6 +31,7 @@ export default async function Onboarding() {
         <div className="bench-card is-white">
           <OnboardingForm
             states={states ?? []}
+            next={next}
             defaults={{
               type: str(m.signup_role) === "broker" ? "broker" : str(m.signup_role) === "brand" ? "brand" : undefined,
               name: session.name || str(m.full_name) || str(m.name),
