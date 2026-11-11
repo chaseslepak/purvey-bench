@@ -350,3 +350,5 @@ a.bench-market_item:hover { border-color: var(--pv-ink); }
 .bench-starinput_star { cursor: pointer; font-size: 2rem; line-height: 1; color: var(--pv-line); padding: 0 2px; border-radius: 6px; }
 .bench-starinput_star.is-on { color: var(--pv-ink); }
 .bench-starinput_star:has(input:focus-visible) { outline: 0.125rem solid #4d65ff; outline-offset: 2px; }
+.bench-todo .bench-link-btn { text-align: left; }
+.bench-tabs.is-steps a { padding: 12px 14px; }

@@ -46,6 +46,11 @@ export function BrandBuilder({ orgId, isOwner, company: c0, profile: p0, product
   const first = useRef(true);
   const set = (patch: Partial<BrandProfile>) => setP((x) => ({ ...x, ...patch }));
 
+  // On narrow screens the step bar scrolls sideways: keep the current step in view.
+  useEffect(() => {
+    document.querySelector(".bench-tabs.is-steps [aria-current='page']")?.scrollIntoView({ inline: "center", block: "nearest" });
+  }, [step]);
+
   // Autosave the profile, 700 ms after the last change.
   useEffect(() => {
     if (first.current) { first.current = false; return; }
@@ -66,7 +71,7 @@ export function BrandBuilder({ orgId, isOwner, company: c0, profile: p0, product
   return (
     <div className="bench-builder_grid">
       <div className="bench-stack" style={{ minWidth: 0 }}>
-        <nav className="bench-tabs" aria-label="Brand profile steps">
+        <nav className="bench-tabs is-steps" aria-label="Brand profile steps">
           {STEPS.map(([k, l], i) => (
             <a key={k} href={`?step=${k}`} aria-current={step === k ? "page" : undefined} onClick={(e) => { e.preventDefault(); setStep(k); setMsg(null); history.replaceState(null, "", `?step=${k}`); }}>{i + 1}. {l}</a>
           ))}
