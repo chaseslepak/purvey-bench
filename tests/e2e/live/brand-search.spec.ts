@@ -35,7 +35,7 @@ test.describe("brand search, briefs and profiles (live)", () => {
     await expect(anonPage.getByRole("link", { name: "Create a free account" })).toBeVisible();
     await expect(anonPage.getByText("a@lakeshore-e2e.example")).toHaveCount(0);
     const axeAnon = await new AxeBuilder({ page: anonPage }).withTags(["wcag2a", "wcag2aa"]).exclude(".section_joinus").analyze();
-    expect(axeAnon.violations.map((v) => v.id), "axe on public profile").toEqual([]);
+    expect(axeAnon.violations.map((v) => `${v.id}: ${v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(" | ")}`), "axe on public profile").toEqual([]);
     await anonCtx.close();
 
     // Brand signs up free and writes a brief.
@@ -66,7 +66,7 @@ test.describe("brand search, briefs and profiles (live)", () => {
     await expect(cards.first().locator(".bench-lcard_name")).toHaveText(`E2E Lakeshore ${stamp}`);
     await expect(cards.first().locator(".bench-lcard_fit b")).toHaveText("95");
     const axeFind = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).exclude(".section_joinus").analyze();
-    expect(axeFind.violations.map((v) => v.id), "axe on /find").toEqual([]);
+    expect(axeFind.violations.map((v) => `${v.id}: ${v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(" | ")}`), "axe on /find").toEqual([]);
     // Empty state names the filter to loosen.
     await page.goto("/find?state=CA&brief=none");
     await expect(page.getByText(/Remove the state filter to see/)).toBeVisible();
@@ -85,7 +85,7 @@ test.describe("brand search, briefs and profiles (live)", () => {
     await page.getByRole("button", { name: "Send to Purvey" }).click();
     await expect(page.getByText(/Request sent/)).toBeVisible();
     const axeProfile = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).exclude(".section_joinus").analyze();
-    expect(axeProfile.violations.map((v) => v.id), "axe on signed-in profile").toEqual([]);
+    expect(axeProfile.violations.map((v) => `${v.id}: ${v.nodes.slice(0, 3).map((n) => n.target.join(" ")).join(" | ")}`), "axe on signed-in profile").toEqual([]);
 
     // Save B too, then compare side by side.
     await page.goto(`/brokers/${B.slug}`);

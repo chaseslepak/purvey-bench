@@ -3,5 +3,18 @@
   "framework": "nextjs",
   "installCommand": "npm ci",
   "buildCommand": "npm run build",
-  "crons": [{ "path": "/api/cron/sync-listings", "schedule": "17 6 * * *" }]
+  "crons": [
+    {
+      "path": "/api/cron/sync-listings",
+      "schedule": "17 6 * * *"
+    },
+    {
+      "path": "/api/cron/emails?job=daily",
+      "schedule": "7 13 * * *"
+    },
+    {
+      "path": "/api/cron/emails?job=weekly",
+      "schedule": "27 14 * * 1"
+    }
+  ]
 }

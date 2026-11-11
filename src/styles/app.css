@@ -281,3 +281,28 @@ html[data-embed="1"] .section_hero { height: 640px; }
 a.bench-chip { text-decoration: none; }
 .bench-chip[aria-current="page"] { background: var(--pv-dark); border-color: var(--pv-dark); color: var(--pv-white); }
 .bench-toolbar { background: var(--pv-white); border-radius: var(--pv-radius-nav); padding: 14px 20px; }
+
+/* ---------- Inbox ---------- */
+.bench-threads { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.bench-thread { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; padding: 16px 12px; border-bottom: 1px solid var(--pv-line-soft); color: var(--pv-ink); text-decoration: none; border-radius: 12px; }
+.bench-thread:hover { background: var(--pv-cream); }
+.bench-thread_name { font-weight: 500; }
+.bench-thread.is-unread .bench-thread_name::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--pv-blue); margin-right: 8px; vertical-align: middle; }
+.bench-thread.is-unread .bench-thread_body { color: var(--pv-ink); font-weight: 500; }
+.bench-thread_meta { display: flex; gap: 6px; align-items: center; font-size: 0.8125rem; color: var(--pv-muted); }
+.bench-thread_body { grid-column: 1 / -1; color: var(--pv-muted); font-size: 0.9375rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bench-msgs { display: flex; flex-direction: column; gap: 14px; max-height: 60vh; overflow-y: auto; padding: 4px; }
+html[data-embed="1"] .bench-msgs { max-height: 560px; }
+.bench-msg { display: flex; flex-direction: column; max-width: 78%; align-self: flex-start; }
+.bench-msg.is-mine { align-self: flex-end; align-items: flex-end; }
+.bench-msg_bubble { background: var(--pv-cream); border-radius: 16px; padding: 12px 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.bench-msg.is-mine .bench-msg_bubble { background: #eef3f9; }
+.bench-msg.is-auto .bench-msg_bubble { background: var(--pv-white); border: 1px dashed var(--pv-line); }
+.bench-msg_meta { font-size: 0.75rem; color: var(--pv-muted); margin: 4px 6px 0; }
+.bench-msg_files { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.bench-briefcard { border: 1px solid var(--pv-line); border-radius: 16px; padding: 14px 16px; background: var(--pv-white); }
+.bench-composer { display: flex; gap: 10px; align-items: flex-end; border-top: 1px solid var(--pv-line-soft); padding-top: 14px; }
+@media screen and (max-width: 479px) { .bench-composer { flex-direction: column; align-items: stretch; } .bench-msg { max-width: 92%; } }
+.bench-typing { font-size: 0.8125rem; color: var(--pv-muted); min-height: 1.2em; }
+/* Purvey blue is 4.37:1 on cream (AA needs 4.5). On cream surfaces links use ink, underlined. */
+.bench-section.is-cream :is(.bench-link, .bench-link-btn), .bench-card:not(.is-white) :is(.bench-link, .bench-link-btn) { color: var(--pv-ink); }
