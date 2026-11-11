@@ -138,3 +138,12 @@ export async function enqueueAdminDigest(): Promise<number> {
   }
   return n;
 }
+
+/**
+ * Send one email now, straight to an address (team invites). The invite link
+ * carries a secret token, so it is never stored in the outbox.
+ */
+export async function sendNow(to: string, kind: Kind, payload: Record<string, unknown>): Promise<boolean> {
+  if (!emailConfigured()) return false;
+  try { await deliver(to, kind, payload, null); return true; } catch { return false; }
+}

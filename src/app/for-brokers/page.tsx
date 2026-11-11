@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CtaBand } from "@/components/site/CtaBand";
+import { MarketList } from "@/components/site/MarketList";
+import { loadDemand } from "@/lib/market";
+
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: "For brokers",
@@ -16,7 +20,8 @@ const INCLUDED = [
   ["No lead fees", "No tiers, no contact caps, no paid placement. Cancel any time from the billing portal."],
 ];
 
-export default function ForBrokers() {
+export default async function ForBrokers() {
+  const demand = await loadDemand(30);
   return (
     <>
       <section className="bench-section is-cream bench-stack">
@@ -31,6 +36,13 @@ export default function ForBrokers() {
           <Link href="/pricing" className="button bench-btn-ghost w-button">See pricing</Link>
         </div>
       </section>
+      {demand.length > 0 && (
+        <section className="bench-section bench-stack">
+          <MarketList items={demand} audience="brokers" heading="Where brands want representation"
+            lede="Retailers and distributors that brands on Bench are seeking brokers for right now, from their briefs and searches. Counts are of different brands; an account shows once three or more brands want it." />
+          <div><Link href="/sign-up?role=broker" className="button w-button">List your brokerage</Link></div>
+        </section>
+      )}
       <section className="bench-section bench-stack">
         <h2 className="bench-h-section">What’s included for $100 a month</h2>
         <div className="bench-grid-3">

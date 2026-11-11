@@ -3,11 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { sendNow } from "@/lib/email/send";
 import { getSession } from "@/lib/session";
 import { requestOrigin } from "@/lib/origin";
 import { createClient } from "@/lib/supabase/server";
 
-export type FormState = { error?: string; fieldErrors?: Record<string, string>; ok?: string } | undefined;
+export type FormState = { error?: string; fieldErrors?: Record<string, string>; ok?: string; sent?: boolean } | undefined;
 
 function fieldErrors(error: z.ZodError) {
   const out: Record<string, string> = {};
@@ -74,15 +75,35 @@ export async function inviteTeammate(_prev: FormState, form: FormData): Promise<
   const { data: token, error } = await supabase.rpc("create_invite", { p_email: parsed.data.email, p_role: parsed.data.role });
   if (error) return { error: error.message.includes("already a teammate") ? "That person is already on your team." : "Couldn't create the invite." };
   revalidatePath("/app/team");
-  // Phase 4 sends this by email through Resend; until then the owner shares it.
-  return { ok: `${await requestOrigin()}/invite/${token}` };
+  const link = `${await requestOrigin()}/invite/${token}`;
+  const sent = await sendNow(parsed.data.email, "team_invite", { link, org: session.org.name, inviter: session.name ?? session.email, role: parsed.data.role });
+  // The link is also shown once, so the owner can share it if the email doesn't arrive.
+  return { ok: link, sent };
 }
+
+const teamBack = (msg: { ok?: string; err?: string }): never => {
+  revalidatePath("/app/team");
+  redirect(`/app/team?${new URLSearchParams(msg as Record<string, string>)}`);
+};
+const teamError = (m: string) => (/at least one owner/.test(m) ? "A team needs at least one owner. Make someone else an owner first." : /only owners/.test(m) ? "Only owners can do that." : "Couldn't update the team.");
 
 export async function removeTeammate(form: FormData) {
   const userId = z.uuid().parse(form.get("userId"));
+  const session = await getSession();
   const supabase = await createClient();
-  await supabase.rpc("remove_member", { p_user: userId });
-  revalidatePath("/app/team");
+  const { error } = await supabase.rpc("remove_member", { p_user: userId });
+  if (error) teamBack({ err: teamError(error.message) });
+  if (userId === session?.userId) redirect("/app/onboarding"); // left the team
+  teamBack({ ok: "Teammate removed. Their conversations are unassigned." });
+}
+
+export async function setTeammateRole(form: FormData) {
+  const userId = z.uuid().parse(form.get("userId"));
+  const role = z.enum(["owner", "member"]).parse(form.get("role"));
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_member_role", { p_user: userId, p_role: role });
+  if (error) teamBack({ err: teamError(error.message) });
+  teamBack({ ok: role === "owner" ? "Made an owner." : "Changed to member." });
 }
 
 export async function revokeInvite(form: FormData) {

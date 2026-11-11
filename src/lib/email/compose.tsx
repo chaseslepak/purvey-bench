@@ -106,6 +106,18 @@ export async function composeEmail(kind: Kind, payload: P, ctx: { appUrl: string
       paragraphs = [`${s(payload.from_org)} recorded payment for ${s(payload.period)}. Check your bank for the deposit.`];
       cta = { label: "Open commissions", href: `${thread(payload.conversation_id)}/commissions` };
       break;
+    case "conversation_assigned":
+      subject = `${s(payload.by) || "A teammate"} assigned you the ${s(payload.other)} conversation`;
+      heading = "A conversation is yours";
+      paragraphs = [`${s(payload.by) || "A teammate"} assigned you the conversation with ${s(payload.other)} on Purvey Bench.`];
+      cta = { label: "Open the conversation", href: thread(payload.conversation_id) };
+      break;
+    case "team_invite":
+      subject = `${s(payload.inviter) || "A teammate"} invited you to ${s(payload.org)} on Purvey Bench`;
+      heading = `Join ${s(payload.org)} on Purvey Bench`;
+      paragraphs = [`${s(payload.inviter) || "A teammate"} invited you to join ${s(payload.org)} as ${s(payload.role) === "owner" ? "an owner" : "a member"}. The link works for 14 days and only for this email address.`];
+      cta = { label: "Accept the invite", href: s(payload.link) };
+      break;
     case "admin_warning":
       subject = "A message from Purvey about your Bench account"; heading = "About your account";
       paragraphs = [s(payload.message), "Reply to this email if you have questions. Repeated reports can lead to your account being paused."];
