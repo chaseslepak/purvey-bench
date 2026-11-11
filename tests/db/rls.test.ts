@@ -366,11 +366,12 @@ describe("listing status is set only by billing sync or an admin", () => {
     });
   });
 
-  it("canceled stays live until the period ends", async () => {
+  it("cancel at period end stays live while active; a cancelled subscription pauses", async () => {
     await as(service, async (q) => {
-      await q("update subscriptions set comped = false, status = 'canceled', current_period_end = now() + interval '3 days' where org_id = $1", [f.brokerX]);
+      await q("update subscriptions set comped = false, status = 'active', cancel_at_period_end = true, current_period_end = now() + interval '3 days' where org_id = $1", [f.brokerX]);
       expect((await q<{ s: string }>("select public.sync_listing_status($1) as s", [f.brokerX]))[0].s).toBe("live");
-      await q("update subscriptions set current_period_end = now() - interval '1 minute' where org_id = $1", [f.brokerX]);
+      // Even with time left on the period, an immediate cancellation (e.g. dunning ended) pauses.
+      await q("update subscriptions set status = 'canceled' where org_id = $1", [f.brokerX]);
       expect((await q<{ s: string }>("select public.sync_listing_status($1) as s", [f.brokerX]))[0].s).toBe("paused");
     });
   });
