@@ -399,9 +399,9 @@ a.bench-market_item:hover { border-color: var(--pv-ink); }
 .bench-spots { margin: 0; padding: 8px 12px; border-radius: var(--pv-radius-button); background: var(--pv-warn-bg); color: var(--pv-warn-ink); font-size: 0.875rem; }
 .bench-hero-split { align-items: center; }
 .bench-band_body { color: #3a3a3a; }
-.bench-band .heading-style-h2, .bench-band .text_title { margin-left: 0; padding-left: 0; }
 .bench-band .button_wrap { padding-left: 0; }
 .bench-legal { max-width: 52rem; }
 .bench-legal h2 { font-family: var(--pv-font-display); font-weight: 400; font-size: 1.375rem; margin: 12px 0 0; }
 .bench-legal ul { margin: 0; padding-left: 1.25rem; display: grid; gap: 10px; }
 .bench-legal p, .bench-legal li { line-height: 1.6; }
+.bench-hero .heading { margin-left: 0; margin-right: 0; }

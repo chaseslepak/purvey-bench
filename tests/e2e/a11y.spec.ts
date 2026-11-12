@@ -23,7 +23,7 @@ test("the mobile menu works by keyboard", async ({ page }) => {
   await page.goto("/pricing");
   await expect(page.locator(".navbar").getByRole("link", { name: "Insights" })).toBeVisible();
   await page.setViewportSize({ width: 479, height: 900 });
-  const menu = page.getByRole("button", { name: "Menu" });
+  const menu = page.getByRole("button", { name: "Menu", exact: true });
   await menu.focus();
   await page.keyboard.press("Enter");
   await expect(menu).toHaveAttribute("aria-expanded", "true");

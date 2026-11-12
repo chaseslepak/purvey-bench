@@ -55,8 +55,8 @@ export function SiteHeader() {
                 </nav>
               </div>
               <div className="nav_buttons-wrap">
-                <div className="login-wrap hide-mobile-landscape">
-                  <a href={siteLinks.contact} className="button is-small w-button">Book a strategy call</a>
+                <div className="login-wrap">
+                  <a href={siteLinks.contact} className="button is-small is-nav-cta w-button">Book a strategy call</a>
                 </div>
                 <button
                   type="button"

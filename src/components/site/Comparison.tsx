@@ -13,7 +13,7 @@ export function Comparison() {
     <section className="bench-section bench-stack" aria-labelledby="compare-heading">
       <div className="text_title">Brands and brokers</div>
       <h2 id="compare-heading" className="bench-h-section">One directory, two simple sides.</h2>
-      <div className="bench-table-wrap">
+      <div className="bench-table-wrap" tabIndex={0} role="region" aria-labelledby="compare-heading">
         <table className="bench-table bench-compare">
           <thead>
             <tr><th scope="col"><span className="bench-sr-only">Feature</span></th><th scope="col">Brands</th><th scope="col">Brokers</th></tr>

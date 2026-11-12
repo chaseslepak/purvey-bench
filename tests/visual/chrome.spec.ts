@@ -64,6 +64,8 @@ for (const width of WIDTHS) {
       const bench = await open(browser, `${baseURL}${BENCH_PAGE}`, width);
       for (const sel of [".section_joinus .heading-style-h2", ".section_joinus .button", ".navbar .button.is-small", ".footer_link", ".text_title"]) {
         const [l, b] = await Promise.all([computed(live, sel), computed(bench, sel)]);
+        // The closing band carries Bench copy, so its heading's box size differs; its type must not.
+        if (sel === ".section_joinus .heading-style-h2") { delete l.height; delete b.height; delete l.width; delete b.width; }
         expect(b, sel).toEqual(l);
       }
       // Body text (height excluded: pages differ in length).

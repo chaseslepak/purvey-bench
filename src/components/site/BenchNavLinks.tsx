@@ -22,8 +22,8 @@ export function BenchNavLinks({ items, signedIn }: { items: NavItem[]; signedIn:
   const cur = currentHref(path, items);
   return (
     <>
-      <button type="button" className="bench-subnav_toggle" aria-label={open ? "Close Bench pages" : "Bench pages"} aria-expanded={open} aria-controls="bench-subnav-links" onClick={() => setOpenOn(open ? null : path)}>
-        {open ? "Close" : "Menu"}
+      <button type="button" className="bench-subnav_toggle" aria-expanded={open} aria-controls="bench-subnav-links" onClick={() => setOpenOn(open ? null : path)}>
+        {open ? "Close menu" : "Bench menu"}
       </button>
       <div id="bench-subnav-links" className={`bench-subnav_links${open ? " is-open" : ""}`}>
         {items.map((i) => (
