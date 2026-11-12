@@ -5,6 +5,7 @@ import { z } from "zod";
 import { PLANS, type Plan, stripe, stripeConfigured, listingPriceId } from "@/lib/billing/stripe";
 import { earlyAccessLeft } from "@/lib/billing/early-access";
 import { hasListingAccess } from "@/lib/billing/subscription";
+import { syncSubscription } from "@/lib/billing/sync";
 import { requestOrigin } from "@/lib/origin";
 import { getSession } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -231,12 +232,12 @@ export async function setDocumentPrivacy(id: string, isPrivate: boolean): Promis
 }
 
 export async function deleteDocument(id: string): Promise<SaveResult> {
-  const { db } = await context();
-  const { data: doc } = await db.from("listing_documents").select("storage_path").eq("id", z.uuid().parse(id)).single();
-  if (!doc) return { ok: false, error: "Document not found." };
-  const e = (await db.from("listing_documents").delete().eq("id", id)).error;
+  const { db, listing } = await context();
+  // Delete only this brokerage's own row, and remove only the file that row pointed to.
+  const { data: gone, error: e } = await db.from("listing_documents").delete().eq("id", z.uuid().parse(id)).eq("listing_id", listing.id).select("storage_path");
   if (e) return { ok: false, error: "Couldn't delete the document." };
-  await createAdminClient().storage.from("listing-docs").remove([doc.storage_path]);
+  if (!gone?.length) return { ok: false, error: "Document not found." };
+  await createAdminClient().storage.from("listing-docs").remove(gone.map((d) => d.storage_path as string));
   return { ok: true, ...(await checklist(db)) };
 }
 
@@ -286,24 +287,54 @@ export async function startCheckout(plan: Plan): Promise<{ ok: true; checkoutUrl
   const { data: sub } = await admin.from("subscriptions").select("status, comped, current_period_end, stripe_customer_id").eq("org_id", orgId).maybeSingle();
   if (hasListingAccess(sub)) return { ok: true };
   if (!stripeConfigured()) return { ok: false, error: "Billing isn't configured in this environment yet." };
-  if (plan === "annual" && (await earlyAccessLeft()) <= 0) return { ok: false, error: "The early access annual deals are all taken. The monthly plan is still available." };
 
-  let customer = sub?.stripe_customer_id ?? null;
-  if (!customer) {
-    const c = await stripe().customers.create({ name: session.org.name, email: session.email, metadata: { org_id: orgId, app: "purvey-bench" } });
-    customer = c.id;
-    await admin.from("subscriptions").upsert({ org_id: orgId, stripe_customer_id: customer }, { onConflict: "org_id" });
+  try {
+    // One Stripe customer per brokerage. The idempotency key makes two
+    // simultaneous clicks (two tabs, two owners) get the same customer.
+    let customer = sub?.stripe_customer_id ?? null;
+    if (!customer) {
+      const c = await stripe().customers.create(
+        { name: session.org.name, email: session.email, metadata: { org_id: orgId, app: "purvey-bench" } },
+        { idempotencyKey: `bench-customer-${orgId}` },
+      );
+      customer = c.id;
+      const { error } = await admin.from("subscriptions").upsert({ org_id: orgId, stripe_customer_id: customer }, { onConflict: "org_id" });
+      if (error) return { ok: false, error: "Couldn't start checkout. Please try again." };
+    }
+
+    // Already paying (e.g. paid in another tab and the webhook hasn't landed): sync, don't charge twice.
+    const existing = await stripe().subscriptions.list({ customer, status: "all", limit: 10 });
+    const live = existing.data.find((x) => ["active", "trialing", "past_due"].includes(x.status));
+    if (live) {
+      await syncSubscription(live);
+      revalidatePath("/app/listing");
+      return { ok: true };
+    }
+    // Close any checkout this brokerage left open, so an old tab can't be paid as well.
+    const open = await stripe().checkout.sessions.list({ customer, status: "open", limit: 10 });
+    await Promise.all(open.data.map((cs) => stripe().checkout.sessions.expire(cs.id).catch(() => null)));
+
+    // Early access: spots are held by paid annual plans and by annual checkouts still open.
+    if (plan === "annual" && (await earlyAccessLeft()) <= 0) {
+      return { ok: false, error: "The early access annual deals are all taken. The monthly plan is still available." };
+    }
+
+    const origin = await requestOrigin();
+    const checkout = await stripe().checkout.sessions.create({
+      mode: "subscription",
+      customer,
+      client_reference_id: orgId,
+      line_items: [{ price: await listingPriceId(plan), quantity: 1 }],
+      subscription_data: { metadata: { org_id: orgId, plan } },
+      metadata: { org_id: orgId, plan },
+      allow_promotion_codes: false,
+      expires_at: Math.floor(Date.now() / 1000) + 31 * 60, // Stripe's minimum is 30 minutes
+      success_url: `${origin}/app/listing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/app/listing?checkout=cancelled`,
+    });
+    return { ok: true, checkoutUrl: checkout.url! };
+  } catch (e) {
+    console.error("startCheckout failed", e);
+    return { ok: false, error: "Couldn't open checkout. Please try again in a minute." };
   }
-  const origin = await requestOrigin();
-  const checkout = await stripe().checkout.sessions.create({
-    mode: "subscription",
-    customer,
-    client_reference_id: orgId,
-    line_items: [{ price: await listingPriceId(plan), quantity: 1 }],
-    subscription_data: { metadata: { org_id: orgId, plan } },
-    allow_promotion_codes: false,
-    success_url: `${origin}/app/listing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/app/listing?checkout=cancelled`,
-  });
-  return { ok: true, checkoutUrl: checkout.url! };
 }

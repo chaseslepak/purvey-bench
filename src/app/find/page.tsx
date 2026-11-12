@@ -5,6 +5,7 @@ import { RetailerFilter } from "@/components/brand/RetailerFilter";
 import { SaveButton } from "@/components/brand/SaveButton";
 import { getReference } from "@/lib/reference";
 import { FilterPanel } from "./FilterPanel";
+import { siteLinks } from "@/lib/site";
 import { briefToFit, cardData, parseFilters, search, type BriefRow, type Filters } from "@/lib/search";
 import { loadLiveListings, loadRatings } from "@/lib/search-data";
 import { loadBrand } from "@/lib/brand-data";
@@ -117,7 +118,7 @@ export default async function Find({ searchParams }: { searchParams: Promise<Rec
           {select("distributor", "Distributor", ref.distributors.map((c) => ({ value: c.id, label: c.name })))}
           <label className="bench-row bench-small" style={{ gap: 8 }}><input type="checkbox" name="verified" value="1" defaultChecked={!!f.verified} /> Verified only</label>
           <label className="bench-row bench-small" style={{ gap: 8 }}><input type="checkbox" name="taking" value="1" defaultChecked={!!f.taking} /> Taking new lines</label>
-          {select("sort", "Sort", [...(fitBrief ? [{ value: "fit", label: "Best fit to brief" }] : []), { value: "verified", label: "Verified first" }, { value: "recent", label: "Recently updated" }], null)}
+          {select("sort", "Sort", [...(fitBrief ? [{ value: "fit", label: "Best fit to brief" }] : []), { value: "recent", label: "Recently updated" }, { value: "verified", label: "Verified first" }], null)}
           <div className="bench-row">
             <button type="submit" className="button w-button">Search</button>
             <Link href="/find" className="bench-link bench-small">Clear filters</Link>
@@ -130,14 +131,22 @@ export default async function Find({ searchParams }: { searchParams: Promise<Rec
             <h2 id="results-h" className="bench-eyebrow" style={{ margin: 0 }} aria-live="polite">
               {r.total} broker{r.total === 1 ? "" : "s"}{useProfile ? " · ranked for your brand profile" : brief ? ` · ranked for “${brief.title}”` : ""}
             </h2>
-            {!session && <Link className="bench-small bench-link" href="/sign-up?role=brand">Create a free account to see contact details</Link>}
+            {!session && r.total > 0 && <Link className="bench-small bench-link" href="/sign-up?role=brand">Create a free account to see contact details</Link>}
           </div>
 
           {r.total === 0 ? (
             <div className="bench-section is-cream bench-stack">
               <h3 className="bench-h-section" style={{ fontSize: "1.5rem" }}>{activeFilters || !all.length ? (all.length ? "No brokers match all of these filters" : "Brokers are joining Bench now") : "No brokers to show yet"}</h3>
               {!all.length ? (
-                <p style={{ margin: 0 }}>New brokerages are listing every week. <Link className="bench-link" href="/for-brokers">Are you a broker? List your brokerage</Link>.</p>
+                <>
+                  <p style={{ margin: 0 }}>
+                    {isBrand
+                      ? <>Set the retailers and regions you&rsquo;re targeting in <Link className="bench-link" href="/app/brand?step=goals">your brand profile</Link> and we&rsquo;ll rank brokers for you as they list.</>
+                      : <>Tell us the retailers you need with a free brand account and we&rsquo;ll rank brokers for you as they list. <Link className="bench-link" href="/sign-up?role=brand&next=%2Ffind">Create a free account</Link>.</>}
+                  </p>
+                  <p style={{ margin: 0 }}>Need a broker sooner? <a className="bench-link" href={siteLinks.contact}>Book a strategy call</a> and Purvey can run the placement for you.</p>
+                  {!isBrand && <p className="bench-small bench-muted" style={{ margin: 0 }}>Are you a broker? <Link className="bench-link" href="/for-brokers">List your brokerage</Link>.</p>}
+                </>
               ) : r.loosen ? (
                 <p style={{ margin: 0 }}>
                   Remove the <strong>{LOOSEN_LABEL[r.loosen.key]}</strong> filter to see {r.loosen.count} broker{r.loosen.count === 1 ? "" : "s"}.{" "}

@@ -32,7 +32,7 @@ test("?embed=1 hides the site header, footer and CTA band but keeps the Bench na
   await page.goto("/pricing?embed=1");
   await expect(page.locator("html")).toHaveAttribute("data-embed", "1");
   await expect(page.locator(".navbar")).toBeHidden();
-  await expect(page.locator("section.footer")).toBeHidden();
+  await expect(page.locator(".footer")).toBeHidden();
   await expect(page.locator(".section_joinus")).toBeHidden();
   await expect(page.locator(".bench-subnav")).toBeVisible();
 });
@@ -41,7 +41,7 @@ test("standalone shows the full site chrome", async ({ page }) => {
   await page.goto("/pricing");
   await expect(page.locator("html")).not.toHaveAttribute("data-embed", "1");
   await expect(page.locator(".navbar")).toBeVisible();
-  await expect(page.locator("section.footer")).toBeVisible();
+  await expect(page.locator(".footer")).toBeVisible();
 });
 
 test("purveycpg.com may frame the app, and framing is detected without ?embed=1", async ({ page, baseURL }) => {

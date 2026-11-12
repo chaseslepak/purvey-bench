@@ -1,10 +1,30 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CtaBand } from "@/components/site/CtaBand";
+import { ListingCard, type ListingCardData } from "@/components/listing/ListingCard";
 import { MarketList } from "@/components/site/MarketList";
+import { earlyAccessLeft } from "@/lib/billing/early-access";
 import { loadDemand } from "@/lib/market";
 
-export const revalidate = 3600;
+export const revalidate = 300;
+
+/** An illustrative card so brokers see what brands see. Not a real brokerage. */
+const SAMPLE: ListingCardData = {
+  name: "Lakeshore Sales & Marketing (sample)",
+  logoUrl: null,
+  hq: "Chicago, IL",
+  coverage: "Midwest",
+  channels: ["Conventional grocery", "Natural & specialty"],
+  retailers: [{ name: "Kroger", freq: "weekly" }, { name: "Meijer", freq: "weekly" }, { name: "Jewel-Osco", freq: "monthly" }, { name: "Hy-Vee", freq: "monthly" }],
+  verified: true,
+  fit: { score: 86, reasons: ["Covers Kroger weekly", "Meijer weekly", "KeHE"] },
+};
+
+const HOW_BRANDS_FIND = [
+  ["Purvey's own brands", "Brands Purvey advises are sent to Bench first when they need a broker."],
+  ["purveycpg.com", "Bench sits in Purvey's main navigation, in front of founders reading about launch and retail strategy."],
+  ["Free for brands, forever", "No paywall on search, profiles or messaging, so brands come back every time they open a new account."],
+];
 
 export const metadata: Metadata = {
   title: "For brokers",
@@ -21,19 +41,40 @@ const INCLUDED = [
 ];
 
 export default async function ForBrokers() {
-  const demand = await loadDemand(30);
+  const [demand, left] = await Promise.all([loadDemand(30), earlyAccessLeft()]);
   return (
     <>
-      <section className="bench-section is-cream bench-stack">
-        <div className="text_title">For brokers</div>
-        <h1 className="bench-h-section" style={{ maxWidth: "40rem" }}>Get found by brands that fit the accounts you already call on.</h1>
-        <p className="bench-lede">
-          Purvey Bench is where emerging food and beverage brands look for brokers. They search by retailer, region,
-          channel and distributor, so a complete listing puts you in front of the right brands.
-        </p>
-        <div className="bench-row" style={{ marginTop: 8 }}>
-          <Link href="/sign-up?role=broker" className="button w-button">Start your listing</Link>
-          <Link href="/pricing" className="button bench-btn-ghost w-button">See pricing</Link>
+      <section className="bench-section is-cream bench-grid-2 bench-hero-split">
+        <div className="bench-stack">
+          <div className="text_title">For brokers</div>
+          <h1 className="bench-h-section" style={{ maxWidth: "40rem" }}>Get found by brands that fit the accounts you already call on.</h1>
+          <p className="bench-lede">
+            Purvey Bench is where emerging food and beverage brands look for brokers. They search by retailer, region,
+            channel and distributor, so a complete listing puts you in front of the right brands.
+          </p>
+          {left > 0 && (
+            <p className="bench-spots"><strong>Early access:</strong> $900 for your first year, 25% off ($75 a month). Only {left} early access deal{left === 1 ? "" : "s"} still available.</p>
+          )}
+          <div className="bench-row" style={{ marginTop: 8 }}>
+            <Link href="/sign-up?role=broker" className="button w-button">Start your listing</Link>
+            <Link href="/pricing" className="button bench-btn-ghost w-button">See pricing</Link>
+          </div>
+        </div>
+        <div className="bench-stack" style={{ gap: 10 }}>
+          <p className="bench-eyebrow" style={{ margin: 0 }}>What brands see</p>
+          <ListingCard data={SAMPLE} />
+          <p className="bench-small bench-muted" style={{ margin: 0 }}>Sample listing. The fit score is calculated against each brand&rsquo;s own brief.</p>
+        </div>
+      </section>
+      <section className="bench-section bench-stack" aria-labelledby="how-find">
+        <h2 id="how-find" className="bench-h-section">How brands find Bench</h2>
+        <div className="bench-grid-3">
+          {HOW_BRANDS_FIND.map(([title, body]) => (
+            <div key={title} className="bench-card bench-stack">
+              <h3 style={{ fontSize: "1.5rem", lineHeight: 1.33 }}>{title}</h3>
+              <p className="bench-muted">{body}</p>
+            </div>
+          ))}
         </div>
       </section>
       {demand.length > 0 && (
@@ -54,7 +95,7 @@ export default async function ForBrokers() {
           ))}
         </div>
       </section>
-      <CtaBand />
+      <CtaBand audience="brokers" />
     </>
   );
 }

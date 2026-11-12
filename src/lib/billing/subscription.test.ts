@@ -45,14 +45,14 @@ describe("plans and access", () => {
     expect(planOf(withInterval("month"))).toBe("monthly");
     expect(planOf(sub())).toBeNull();
   });
-  it("gives access only to paid, comped or still-in-period brokers", () => {
+  it("gives access only to paid or comped brokers; cancelled can pay again", () => {
     const now = new Date("2027-01-01T00:00:00Z");
     expect(hasListingAccess(null)).toBe(false);
     expect(hasListingAccess({ comped: true })).toBe(true);
     expect(hasListingAccess({ status: "active" })).toBe(true);
     expect(hasListingAccess({ status: "past_due" })).toBe(true);
     expect(hasListingAccess({ status: "incomplete" })).toBe(false);
-    expect(hasListingAccess({ status: "canceled", current_period_end: "2027-02-01T00:00:00Z" }, now)).toBe(true);
+    expect(hasListingAccess({ status: "canceled", current_period_end: "2027-02-01T00:00:00Z" }, now)).toBe(false);
     expect(hasListingAccess({ status: "canceled", current_period_end: "2026-12-01T00:00:00Z" }, now)).toBe(false);
     expect(hasListingAccess({ status: null })).toBe(false);
   });

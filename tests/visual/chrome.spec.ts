@@ -16,8 +16,8 @@ const BENCH_PAGE = "/pricing";
 
 const REGIONS = [
   { name: "header", selector: ".navbar .padding-global.is-navbar" },
-  { name: "cta-band", selector: ".section_joinus" },
-  { name: "footer", selector: "section.footer" },
+  // The closing band keeps the site's styles (checked below) but carries Bench copy, so it isn't pixel-compared.
+  { name: "footer", selector: ".footer" },
 ];
 
 async function open(browser: Browser, url: string, width: number) {

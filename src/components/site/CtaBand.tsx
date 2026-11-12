@@ -1,28 +1,30 @@
-import { siteLinks } from "@/lib/site";
+import Link from "next/link";
 
-/** "Ready to Scale Smarter?" band from purveycpg.com, verbatim. */
-export function CtaBand() {
+const COPY = {
+  brands: { eyebrow: "Purvey Bench", title: "Find the broker who already calls on your buyers.", body: "Search by retailer, region, channel and distributor. Free for brands, always.", cta: "Find a broker", href: "/find" },
+  brokers: { eyebrow: "Purvey Bench", title: "Put your coverage in front of brands that fit.", body: "One flat listing, ranked by fit and never by payment. Brands message you directly.", cta: "Start your listing", href: "/sign-up?role=broker" },
+} as const;
+
+/** The closing band, in the purveycpg.com "Join us" style, with a Bench call to action. */
+export function CtaBand({ audience = "brands" }: { audience?: keyof typeof COPY }) {
+  const c = COPY[audience];
   return (
-    <section className="section_joinus bench-chrome">
+    <section className="section_joinus bench-chrome bench-band">
       <div className="padding-global padding-section-bottom">
         <div className="container-large">
           <div className="w-layout-grid grid-col-2">
-            <div id="w-node-_1934b158-c68e-7b97-ef9a-6e0827780280-2778027c" className="join_left">
+            <div className="join_left">
               <div>
-                <div className="text_title scroll-into-view">Join us</div>
+                <div className="text_title scroll-into-view">{c.eyebrow}</div>
                 <div className="spacer-medium" />
                 <div className="title-max is-32rem scroll-into-view">
-                  <h2 className="heading-style-h2">Ready to Scale Smarter?</h2>
+                  <h2 className="heading-style-h2">{c.title}</h2>
                 </div>
                 <div className="spacer-medium" />
-                <div className="text-color-tertiary scroll-into-view">
-                  Whether you’re preparing for launch, refining operations, expanding retail distribution, or navigating
-                  your next phase of growth, Purvey is built to support modern consumer brands through every stage of the
-                  journey.
-                </div>
+                <div className="bench-band_body scroll-into-view">{c.body}</div>
               </div>
               <div className="button_wrap scroll-into-view">
-                <a href={siteLinks.contact} className="button is-secondary w-button">Get in Touch</a>
+                <Link href={c.href} className="button is-secondary w-button">{c.cta}</Link>
               </div>
             </div>
           </div>

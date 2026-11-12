@@ -8,11 +8,23 @@ import "@/styles/webflow.css";
 import "@/styles/tokens.css";
 import "@/styles/app.css";
 
+/** Purvey's share image from purveycpg.com (1200 x 630). */
+const SHARE_IMAGE = "https://cdn.prod.website-files.com/69bdcd2f869a6d3500f34c17/6af284e5b0dab5426d21a3e7_purvey-share-1200x630.png";
+
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
   title: { default: "Purvey Bench | Find food and beverage brokers", template: "%s | Purvey Bench" },
   description:
     "Search food and beverage brokers by the retailers, regions, channels and distributors they actually cover. Free for brands.",
+  alternates: { canonical: "./" },
+  openGraph: {
+    type: "website",
+    siteName: "Purvey Bench",
+    title: "Purvey Bench | Find food and beverage brokers",
+    description: "Search food and beverage brokers by the retailers, regions, channels and distributors they actually cover. Free for brands.",
+    images: [{ url: SHARE_IMAGE, width: 1200, height: 630, alt: "Purvey" }],
+  },
+  twitter: { card: "summary_large_image", images: [SHARE_IMAGE] },
   icons: {
     icon: "https://cdn.prod.website-files.com/665687d713145087b3ce1703/665a4535765980c07e93225b_Group%202942.png",
     apple: "https://cdn.prod.website-files.com/665687d713145087b3ce1703/665a45115482c06bb38d0091_Group%202940.png",

@@ -23,7 +23,7 @@ export function ChoosePlan({ plans, isOwner, lapsed, banner, spotsLeft }: { plan
     setError(null);
     setChosen(plan);
     start(async () => {
-      const r = await startCheckout(plan);
+      const r = await startCheckout(plan).catch(() => ({ ok: false as const, error: "Couldn't open checkout. Check your connection and try again." }));
       if (!r.ok) { setError(r.error); return; }
       // Top-level navigation: Stripe Checkout must never load inside the purveycpg.com iframe.
       if (r.checkoutUrl) (window.top ?? window).location.href = r.checkoutUrl;
