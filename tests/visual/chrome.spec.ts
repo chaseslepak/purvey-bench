@@ -16,8 +16,8 @@ const BENCH_PAGE = "/pricing";
 
 const REGIONS = [
   { name: "header", selector: ".navbar .padding-global.is-navbar" },
-  { name: "cta-band", selector: ".section_joinus" },
-  { name: "footer", selector: "section.footer" },
+  // The closing band keeps the site's styles (checked below) but carries Bench copy, so it isn't pixel-compared.
+  { name: "footer", selector: ".footer" },
 ];
 
 async function open(browser: Browser, url: string, width: number) {
@@ -64,6 +64,8 @@ for (const width of WIDTHS) {
       const bench = await open(browser, `${baseURL}${BENCH_PAGE}`, width);
       for (const sel of [".section_joinus .heading-style-h2", ".section_joinus .button", ".navbar .button.is-small", ".footer_link", ".text_title"]) {
         const [l, b] = await Promise.all([computed(live, sel), computed(bench, sel)]);
+        // The closing band carries Bench copy, so its heading's box size differs; its type must not.
+        if (sel === ".section_joinus .heading-style-h2") { delete l.height; delete b.height; delete l.width; delete b.width; }
         expect(b, sel).toEqual(l);
       }
       // Body text (height excluded: pages differ in length).

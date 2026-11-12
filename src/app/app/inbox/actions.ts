@@ -56,6 +56,10 @@ export async function sendMessage(conversationId: string, text: string, attachme
   if (!p.success) return { error: "Check the message and attachments." };
   if (!p.data.text && !p.data.attachments.length) return { error: "Write a message." };
   if (p.data.attachments.some((a) => !a.path.startsWith(`${p.data.id}/`))) return { error: "Invalid attachment." };
+  // Each message emails the other team, so cap bursts: 30 messages per person per 10 minutes.
+  const since = new Date(Date.now() - 10 * 60_000).toISOString();
+  const { count } = await db.from("messages").select("id", { count: "exact", head: true }).eq("sender_user_id", s.userId).gte("created_at", since);
+  if ((count ?? 0) >= 30) return { error: "You're sending messages very quickly. Please wait a few minutes and try again." };
   const msg = p.data.text || `Shared ${p.data.attachments.length} file${p.data.attachments.length === 1 ? "" : "s"}`;
   const { error } = await db.from("messages").insert({ conversation_id: p.data.id, sender_user_id: s.userId, sender_org_id: s.org!.id, body: msg, attachments: p.data.attachments });
   if (error) return { error: /closed/.test(error.message) ? "This conversation is closed." : /blocked/.test(error.message) ? "Messaging is blocked between your organizations." : "Couldn't send your message." };

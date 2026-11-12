@@ -33,7 +33,7 @@ export function SiteHeader() {
                 <img
                   src={LOGO_URL}
                   srcSet={LOGO_SRCSET}
-                  sizes="(max-width: 991px) 100vw, 1136px"
+                  sizes="140px"
                   alt=""
                   className="navbar_logo"
                 />
@@ -50,12 +50,13 @@ export function SiteHeader() {
                     <a href={siteLinks.services} className="nav_links w-nav-link">Services</a>
                     <a href={siteLinks.about} className="nav_links w-nav-link">About</a>
                     <a href={siteLinks.blog} className="nav_link-insights">Insights</a>
+                    <a href="/" className="nav_link-insights" aria-current="page">Bench</a>
                   </div>
                 </nav>
               </div>
               <div className="nav_buttons-wrap">
-                <div className="login-wrap hide-mobile-landscape">
-                  <a href={siteLinks.contact} className="button is-small w-button">Book a strategy call</a>
+                <div className="login-wrap">
+                  <a href={siteLinks.contact} className="button is-small is-nav-cta w-button">Book a strategy call</a>
                 </div>
                 <button
                   type="button"

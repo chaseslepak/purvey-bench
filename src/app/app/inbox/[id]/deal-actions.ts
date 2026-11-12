@@ -84,10 +84,18 @@ export async function registerToolboxFile(conversationId: string, input: { path:
   const { s, db, c } = await ctx(conversationId);
   const p = z.object({ path: z.string().regex(/^[0-9a-f-]{36}\/[0-9a-f-]{36}\.[a-z0-9]{2,5}$/), name: z.string().trim().min(1).max(200), mime: z.string(), folder: z.enum(FOLDERS) }).safeParse(input);
   if (!p.success || !p.data.path.startsWith(`${c.id}/`)) return { error: "Invalid upload." };
+  // A path that's already registered belongs to a file someone added: never verify
+  // (and so possibly delete) it again, whichever side is asking.
+  const admin = createAdminClient();
+  const { data: taken } = await admin.from("toolbox_files").select("id").eq("storage_path", p.data.path).maybeSingle();
+  if (taken) return { error: "Invalid upload." };
   const v = await verifyUpload(p.data.path, p.data.mime);
   if (v.error) return { error: v.error };
   const { error } = await db.from("toolbox_files").insert({ conversation_id: c.id, org_id: s.org!.id, folder: p.data.folder, file_name: p.data.name, storage_path: p.data.path, mime_type: p.data.mime, size_bytes: v.bytes!.length, created_by: s.userId });
-  if (error) { await createAdminClient().storage.from("toolbox").remove([p.data.path]); return { error: "Couldn't save the file." }; }
+  if (error) {
+    if (error.code !== "23505") await admin.storage.from("toolbox").remove([p.data.path]); // not on a duplicate: that file is someone else's
+    return { error: "Couldn't save the file." };
+  }
   done(c.id, "toolbox");
   return { ok: true };
 }

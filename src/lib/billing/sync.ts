@@ -22,9 +22,17 @@ export async function syncSubscription(subOrId: Stripe.Subscription | string): P
   if (!orgId) return null;
 
   const { data: existing } = await db.from("subscriptions").select("past_due_since, stripe_subscription_id, status").eq("org_id", orgId).maybeSingle();
-  // An old, ended subscription must not overwrite a newer active one.
-  if (existing?.stripe_subscription_id && existing.stripe_subscription_id !== sub.id && sub.status === "canceled" && existing.status !== "canceled") {
-    return { orgId, listingStatus: null };
+  // A different subscription than the one on file: an old one must never overwrite a
+  // current paying one (e.g. a late update for an unpaid subscription after the broker
+  // started a new one). If two are paying at once, keep the first and flag it for Purvey.
+  const PAYING = ["active", "trialing", "past_due"];
+  if (existing?.stripe_subscription_id && existing.stripe_subscription_id !== sub.id) {
+    const currentPaying = PAYING.includes(existing.status ?? "");
+    if (currentPaying && !["active", "trialing"].includes(sub.status)) return { orgId, listingStatus: null };
+    if (currentPaying && PAYING.includes(sub.status)) {
+      await db.from("product_events").insert({ name: "duplicate_subscription", org_id: orgId, props: { kept: existing.stripe_subscription_id, extra: sub.id } });
+      return { orgId, listingStatus: null };
+    }
   }
   const row = subscriptionRow(sub, orgId, existing?.past_due_since ?? null);
   const { error } = await db.from("subscriptions").upsert({ ...row, updated_at: new Date().toISOString() }, { onConflict: "org_id" });

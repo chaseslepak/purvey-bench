@@ -15,6 +15,8 @@ export async function proxy(request: NextRequest) {
     response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
     return redirect;
   }
+  // The ?embed=1 copy is for the purveycpg.com iframe only; keep it out of search results.
+  if (request.nextUrl.searchParams.get("embed") === "1") response.headers.set("X-Robots-Tag", "noindex");
   return response;
 }
 

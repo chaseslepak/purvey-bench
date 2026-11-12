@@ -10,7 +10,7 @@ describe("safeNext", () => {
     expect(safeNext("https://purveycpg.com/bench")).toBe("https://purveycpg.com/bench");
   });
   it("rejects open redirects", () => {
-    for (const bad of ["//evil.com", "/\\evil.com", "https://evil.com", "https://purveycpg.com.evil.com/bench", "https://www.purveycpg.com/blog", "javascript:alert(1)"]) {
+    for (const bad of ["//evil.com", "/\\evil.com", "https://evil.com", "https://purveycpg.com.evil.com/bench", "https://www.purveycpg.com/blog", "javascript:alert(1)", "/\t/evil.com", "/\n/evil.com", "/ /evil.com"]) {
       expect(safeNext(bad)).toBe("/app");
     }
   });

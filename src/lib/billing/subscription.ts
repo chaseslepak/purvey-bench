@@ -61,6 +61,7 @@ export function planOf(sub: Stripe.Subscription): "monthly" | "annual" | null {
 export function hasListingAccess(sub: { comped?: boolean | null; status?: string | null; current_period_end?: string | null } | null, now: Date = new Date()): boolean {
   if (!sub) return false;
   if (sub.comped) return true;
-  if (["active", "trialing", "past_due"].includes(sub.status ?? "")) return true;
-  return sub.status === "canceled" && !!sub.current_period_end && new Date(sub.current_period_end) > now;
+  // Matches sync_listing_status: a cancelled subscription has no access, so the broker can pay again.
+  void now;
+  return ["active", "trialing", "past_due"].includes(sub.status ?? "");
 }

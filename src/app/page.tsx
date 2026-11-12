@@ -46,10 +46,10 @@ export default async function Home() {
                 </div>
               </div>
               <div className="button-group">
-                <div className="button_wrap" style={{ paddingLeft: 0 }}>
+                <div className="button_wrap">
                   <Link href="/find" className="button w-button">Find a broker</Link>
                 </div>
-                <div className="button_wrap" style={{ paddingLeft: 0 }}>
+                <div className="button_wrap">
                   <Link href="/for-brokers" className="button is-outline w-button">List your brokerage</Link>
                 </div>
               </div>

@@ -3423,6 +3423,14 @@ figcaption {
   height: 3rem;
 }
 
+.button.is-small.is-nav-cta {
+  letter-spacing: .1em;
+  flex-shrink: 0;
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+  font-size: .8125rem;
+}
+
 .button.is-tertiary {
   background-color: var(--brand--white);
   height: 3rem;
@@ -3720,14 +3728,18 @@ figcaption {
 }
 
 .nav_wrap {
-  grid-column-gap: 3rem;
-  grid-row-gap: 3rem;
-  justify-content: center;
+  grid-column-gap: .5rem;
+  grid-row-gap: .5rem;
+  flex: 1;
+  justify-content: space-between;
   align-items: center;
+  margin-left: 0;
+  padding-right: 1.25rem;
   display: flex;
 }
 
 .nav_mobile {
+  flex-grow: 1;
   justify-content: center;
   align-items: center;
   display: flex;
@@ -3736,6 +3748,7 @@ figcaption {
 .nav_buttons-wrap {
   grid-column-gap: 1.25rem;
   grid-row-gap: 1.25rem;
+  flex-shrink: 0;
   justify-content: flex-start;
   align-items: center;
   display: flex;
@@ -6828,9 +6841,7 @@ figcaption {
   font-weight: 500;
   line-height: 1.42;
   text-decoration-line: none;
-  transition-property: opacity;
-  transition-duration: .3s;
-  transition-timing-function: ease;
+  transition: opacity .3s;
   display: flex;
 }
 
@@ -7385,6 +7396,13 @@ figcaption {
   font-weight: 600;
 }
 
+.bench-embed {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
 @media screen and (max-width: 991px) {
   body {
     --_sizes---fixed--4rem: 4rem;
@@ -7757,6 +7775,7 @@ figcaption {
     flex: 1;
     justify-content: flex-end;
     align-items: center;
+    margin-left: 0;
     padding-right: 1rem;
   }
 
@@ -8991,6 +9010,14 @@ figcaption {
     padding-right: 1rem;
   }
 
+  .button.is-small.is-nav-cta {
+    letter-spacing: .06em;
+    height: 2.25rem;
+    padding-left: .75rem;
+    padding-right: .75rem;
+    font-size: .625rem;
+  }
+
   .padding-section-medium {
     padding-top: 3rem;
     padding-bottom: 3rem;
@@ -9030,6 +9057,10 @@ figcaption {
   .nav_buttons-wrap {
     justify-content: space-between;
     align-items: center;
+  }
+
+  .menu-button {
+    padding-left: .5rem;
   }
 
   .nav-button_component {
@@ -9861,6 +9892,11 @@ figcaption {
     margin-right: 20px;
   }
 
+  .button.is-small.is-nav-cta {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
   .text-sm {
     margin-top: 6px;
   }
@@ -9876,6 +9912,14 @@ figcaption {
 
   .navbar_content {
     padding-left: 0;
+  }
+
+  .navbar_logo-link {
+    width: 5.5rem;
+  }
+
+  .nav_wrap {
+    padding-right: .5rem;
   }
 
   .nav-button_line.is-first, .nav-button_line.is-second, .nav-button_line.is-third {
