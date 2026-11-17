@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
+import { toSavedFilters } from "@/lib/saved-search";
 
 async function brand() {
   const s = await getSession();
@@ -45,5 +46,18 @@ export async function requestPlacement(listingId: string, note: string): Promise
   const { error } = await ctx.db.from("placement_requests").insert({ brand_org_id: ctx.s.org!.id, listing_id: parsed.data.id, note: parsed.data.note || null, created_by: ctx.s.userId });
   if (error) return { error: "Couldn't send the request." };
   // Phase 4 emails Purvey admins and confirms to the brand.
+  return { ok: true };
+}
+
+/** Save the current /find filters as a named search, with an optional weekly email of new matches. */
+export async function saveSearch(query: string, name: string, alerts: boolean): Promise<{ ok?: boolean; error?: string }> {
+  const ctx = await brand();
+  if ("error" in ctx) return { error: ctx.error };
+  const n = z.string().trim().min(1).max(80).safeParse(name);
+  if (!n.success) return { error: "Give the search a name (up to 80 characters)." };
+  const filters = toSavedFilters(String(query).slice(0, 2000));
+  const { error } = await ctx.db.from("saved_searches").insert({ brand_org_id: ctx.s.org!.id, created_by: ctx.s.userId, name: n.data, filters, alerts: Boolean(alerts) });
+  if (error) return { error: /up to 25/.test(error.message) ? "Your team has 25 saved searches. Delete one on the Saved page first." : "Couldn't save the search. Try again." };
+  revalidatePath("/app/saved");
   return { ok: true };
 }

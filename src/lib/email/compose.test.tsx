@@ -23,3 +23,13 @@ describe("composeEmail", () => {
     expect(e.html).not.toContain("Unsubscribe");
   });
 });
+
+describe("saved search alert", () => {
+  it("names the new brokers, links back to the search and can be unsubscribed", async () => {
+    const e = await composeEmail("saved_search_matches", { name: "Midwest Kroger", description: "Kroger · Midwest", count: 7, brokers: ["A Sales", "B Brokerage", "C Group", "D Co", "E Partners"], href: "/find?region=midwest&retailer=1" }, ctx);
+    expect(e.subject).toBe("7 new brokers for “Midwest Kroger”");
+    expect(e.text).toContain("A Sales, B Brokerage, C Group, D Co, E Partners and 2 more");
+    expect(e.html).toContain("https://bench.purveycpg.com/find?region=midwest&amp;retailer=1");
+    expect(e.headers["List-Unsubscribe"]).toBeDefined();
+  });
+});

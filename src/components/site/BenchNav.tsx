@@ -12,6 +12,7 @@ export async function BenchNav() {
   const items: NavItem[] = [
     ...(session ? [{ href: "/app", label: "Dashboard" }] : []),
     { href: "/find", label: "Find brokers" },
+    ...(type !== "broker" ? [{ href: "/resources/broker-kit", label: "Broker kit" }] : []),
     ...(type === "brand" ? [{ href: "/app/brand", label: "Brand profile" }, { href: "/app/briefs", label: "Briefs" }, { href: "/app/saved", label: "Saved" }] : []),
     ...(type === "broker" ? [{ href: "/app/listing", label: "Listing" }, { href: "/app/analytics", label: "Analytics" }, { href: "/app/reviews", label: "Reviews" }] : []),
     ...(!session ? [{ href: "/for-brokers", label: "For brokers" }, { href: "/pricing", label: "Pricing" }] : []),

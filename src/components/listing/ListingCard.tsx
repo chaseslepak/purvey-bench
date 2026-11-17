@@ -13,6 +13,10 @@ export type ListingCardData = {
   fit?: { score: number; reasons: string[] } | null;
   conflict?: string | null;
   rating?: { average: number; count: number } | null;
+  /** "Answers 92% of brands · usually within a day" (display only). */
+  response?: string | null;
+  /** The viewing brand already has a conversation with this brokerage. */
+  messaged?: boolean;
 };
 
 /** The public profile card. Used by the builder preview and by search results. */
@@ -33,11 +37,13 @@ export function ListingCard({ data, headingLevel = 3 }: { data: ListingCardData;
           <H className="bench-lcard_name">{data.name || "Your brokerage"}</H>
           <p className="bench-small bench-muted">{[data.hq, data.coverage].filter(Boolean).join(" · ")}</p>
           {data.rating && <div className="bench-small"><RatingSummary average={data.rating.average} count={data.rating.count} compact /></div>}
+          {data.response && <p className="bench-small bench-lcard_response">{data.response}</p>}
         </div>
         {data.fit && <div className="bench-lcard_fit" title="Fit to your brief"><b aria-hidden="true">{data.fit.score}</b><span aria-hidden="true">fit</span><span className="bench-sr-only">Fit score {data.fit.score} of 100</span></div>}
       </div>
       <div className="bench-row" style={{ gap: 6 }}>
         {data.verified && <span className="bench-tag is-blue">Verified</span>}
+        {data.messaged && <span className="bench-tag is-mist">You&rsquo;ve messaged</span>}
         {data.notTakingNewLines && <span className="bench-tag">Not taking new lines</span>}
         {data.channels.slice(0, 4).map((c) => <span key={c} className="bench-tag is-mist">{c}</span>)}
       </div>

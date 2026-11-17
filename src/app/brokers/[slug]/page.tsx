@@ -9,9 +9,10 @@ import { DocLink } from "@/components/listing/DocLink";
 import { ReviewForm, type MyReview } from "@/components/reviews/ReviewForm";
 import { ReviewList, type PublicReview } from "@/components/reviews/ReviewList";
 import { RatingSummary } from "@/components/reviews/Stars";
+import { responsivenessLabel } from "@/lib/responsiveness";
 import { coverageSummary, FREQ_LABEL, type Freq } from "@/lib/coverage";
 import { getReference } from "@/lib/reference";
-import { loadListingBySlug } from "@/lib/search-data";
+import { loadListingBySlug, loadResponsiveness } from "@/lib/search-data";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -45,12 +46,14 @@ export default async function BrokerProfile({ params }: { params: Promise<{ slug
   ]);
   const own = session?.org?.id === l.orgId;
   const isBrand = session?.org?.type === "brand";
-  const [{ data: rv }, mine, canReview, myRef] = await Promise.all([
+  const [{ data: rv }, mine, canReview, myRef, response] = await Promise.all([
     db.rpc("listing_reviews", { p_listing: l.id }),
     isBrand ? db.from("broker_reviews").select("rating, title, body, show_brand_name").eq("listing_id", l.id).eq("brand_org_id", session!.org!.id).maybeSingle() : Promise.resolve({ data: null }),
     isBrand ? db.rpc("can_review", { p_listing: l.id }) : Promise.resolve({ data: false }),
     isBrand ? db.from("brand_references").select("id").eq("listing_id", l.id).eq("brand_org_id", session!.org!.id).maybeSingle() : Promise.resolve({ data: null }),
+    loadResponsiveness([l.orgId]),
   ]);
+  const responseLine = responsivenessLabel(response.get(l.orgId));
   const reviews = (rv ?? []) as PublicReview[];
   const avg = reviews.length ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length : null;
   const myReview: MyReview = mine.data ? { rating: mine.data.rating, title: mine.data.title, body: mine.data.body, showName: mine.data.show_brand_name } : null;
@@ -78,6 +81,7 @@ export default async function BrokerProfile({ params }: { params: Promise<{ slug
             <h1 className="bench-h-section" style={{ margin: 0 }}>{l.name}</h1>
             <p className="bench-muted" style={{ margin: 0 }}>{[l.hq, coverageSummary(l.states, ref.states, ref.regions)].filter(Boolean).join(" · ")}</p>
             {avg != null && <a href="#reviews" className="bench-rating-link"><RatingSummary average={Math.round(avg * 10) / 10} count={reviews.length} /></a>}
+            {responseLine && <p className="bench-small bench-lcard_response" style={{ margin: 0 }} title="Brand conversations from the last 180 days, answered with a reply or a decline">{responseLine}</p>}
             <div className="bench-row" style={{ gap: 6 }}>
               {l.verified && <span className="bench-tag is-blue">Verified by Purvey</span>}
               {l.notTakingNewLines && <span className="bench-tag">Not taking new lines</span>}

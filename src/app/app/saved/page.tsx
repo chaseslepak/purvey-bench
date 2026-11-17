@@ -3,6 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CompareSubmit } from "./CompareSubmit";
 import { SavedFields } from "./SavedItem";
+import { SavedSearchRow } from "./SavedSearchRow";
+import { describeSearch, searchHref, type SavedFilters } from "@/lib/saved-search";
 import { ListingCard } from "@/components/listing/ListingCard";
 import { SaveButton } from "@/components/brand/SaveButton";
 import { getReference } from "@/lib/reference";
@@ -19,10 +21,11 @@ export default async function Saved({ searchParams }: { searchParams: Promise<{ 
   if (session.org.type !== "brand") redirect("/app");
   const { folder } = await searchParams;
   const db = await createClient();
-  const [{ data: saved }, all, ref] = await Promise.all([
+  const [{ data: saved }, all, ref, { data: searches }] = await Promise.all([
     db.from("saved_brokers").select("id, listing_id, folder, note, created_at").order("created_at", { ascending: false }),
     loadLiveListings(),
     getReference(),
+    db.from("saved_searches").select("id, name, filters, alerts").order("created_at", { ascending: false }),
   ]);
   const byId = new Map(all.map((l) => [l.id, l]));
   const folders = [...new Set((saved ?? []).map((s) => s.folder).filter(Boolean) as string[])].sort();
@@ -77,6 +80,22 @@ export default async function Saved({ searchParams }: { searchParams: Promise<{ 
           </ul>
         </div>
       )}
+      <section id="searches" className="bench-section bench-stack" aria-labelledby="searches-h">
+        <h2 id="searches-h" className="bench-h-section" style={{ fontSize: "1.75rem" }}>Saved searches</h2>
+        {searches?.length ? (
+          <>
+            <p className="bench-muted" style={{ margin: 0 }}>Run a search again in one click. With weekly email on, we&rsquo;ll tell you when brokers that match go live.</p>
+            <ul className="bench-stack" style={{ listStyle: "none", padding: 0, margin: 0, gap: 10 }}>
+              {searches.map((x) => (
+                <SavedSearchRow key={x.id} id={x.id} name={x.name} alerts={x.alerts}
+                  description={describeSearch(x.filters as SavedFilters, ref)} href={searchHref(x.filters as SavedFilters)} />
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p style={{ margin: 0 }}>No saved searches yet. On <Link className="bench-link" href="/find">Find brokers</Link>, set your filters and choose Save this search.</p>
+        )}
+      </section>
     </>
   );
 }

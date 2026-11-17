@@ -18,9 +18,13 @@ export function stripe(): Stripe {
 /** Bench Listing plans. Prices are looked up by key in Stripe, never hard-coded. */
 export const PLANS = {
   monthly: { lookupKey: "bench_listing_monthly", label: "Monthly", price: "$100", per: "/ month", note: "Billed monthly. Cancel any time." },
-  annual: { lookupKey: "bench_listing_annual", label: "Annual · early access", price: "$900", per: "/ year", note: "25% off: $75 a month, paid up front for 12 months. Limited to the first 12 brokerages." },
+  // Legacy: the early-access annual plan. No longer sold (replaced by the Founding Broker code, Nov 17 2026);
+  // kept so existing annual subscriptions still sync and show correctly.
+  annual: { lookupKey: "bench_listing_annual", label: "Annual · early access", price: "$900", per: "/ year", note: "Early access annual plan (no longer offered)." },
 } as const;
 export type Plan = keyof typeof PLANS;
+/** Plans a brokerage can start today. */
+export const SELLABLE_PLANS: Plan[] = ["monthly"];
 export const LISTING_LOOKUP_KEYS: string[] = Object.values(PLANS).map((p) => p.lookupKey);
 
 const cachedPriceId: Partial<Record<Plan, string>> = {};

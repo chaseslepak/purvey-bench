@@ -18,3 +18,23 @@ export async function updateSaved(id: string, patch: { folder?: string; note?: s
   revalidatePath("/app/saved");
   return { ok: !error };
 }
+
+export async function updateSavedSearch(id: string, patch: { name?: string; alerts?: boolean }): Promise<{ ok: boolean }> {
+  const s = await getSession();
+  if (s?.org?.type !== "brand") return { ok: false };
+  const p = z.object({ name: z.string().trim().min(1).max(80).optional(), alerts: z.boolean().optional() }).safeParse(patch);
+  if (!p.success) return { ok: false };
+  const db = await createClient();
+  const { error } = await db.from("saved_searches").update(p.data).eq("id", z.uuid().parse(id));
+  revalidatePath("/app/saved");
+  return { ok: !error };
+}
+
+export async function deleteSavedSearch(id: string): Promise<{ ok: boolean }> {
+  const s = await getSession();
+  if (s?.org?.type !== "brand") return { ok: false };
+  const db = await createClient();
+  const { error } = await db.from("saved_searches").delete().eq("id", z.uuid().parse(id));
+  revalidatePath("/app/saved");
+  return { ok: !error };
+}
