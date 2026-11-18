@@ -20,7 +20,11 @@ async function retailerBySlug(slug: string) {
 export async function generateMetadata({ params }: { params: Promise<{ retailer: string }> }): Promise<Metadata> {
   const r = await retailerBySlug((await params).retailer);
   if (!r) return { title: "Brokers by retailer" };
+  // Thin pages stay out of search until a live broker covers the retailer.
+  const [all, ref] = await Promise.all([loadLiveListings(), getReference()]);
+  const covered = all.some((l) => matches(l, { retailer: r.id }, ref));
   return {
+    ...(covered ? {} : { robots: { index: false, follow: true } }),
     title: `Food and beverage brokers who call on ${r.name}`,
     description: `Independent food and beverage brokers who call on ${r.name}, with how often they visit, the states they cover and how quickly they answer brands. Free for brands.`,
     alternates: { canonical: `/brokers-for/${r.slug}` },
