@@ -1,0 +1,25 @@
+name: Production health
+
+# Fails (and GitHub emails the repo owner) when checkout, Stripe, the launch
+# offer, the database, migrations, email or cron are broken in production.
+on:
+  deployment_status:
+  schedule:
+    - cron: "41 13 * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    if: github.event_name != 'deployment_status' || (github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Production')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check https://bench.purveycpg.com/api/health
+        run: |
+          sleep 20
+          code=$(curl -s -o health.json -w '%{http_code}' https://bench.purveycpg.com/api/health)
+          cat health.json | python3 -m json.tool || cat health.json
+          if [ "$code" != "200" ]; then
+            echo "::error::Bench health check failed ($code)"
+            python3 -c "import json;[print(f'::error::{k}: {v[\"note\"]}') for k,v in json.load(open('health.json'))['checks'].items() if not v['ok']]" || true
+            exit 1
+          fi

@@ -28,7 +28,8 @@ async function readTier(tier: (typeof TIERS)[number]): Promise<TierState> {
     const promoLeft = promoMax == null ? left : Math.max(0, promoMax - (promo.times_redeemed ?? 0));
     return { tier, left: left == null ? null : Math.min(left, promoLeft ?? left), promoId: promo.id };
   } catch (e) {
-    console.warn(`launch offer: reading ${tier.code} failed (${keyMode()} key)`, (e as Error)?.message);
+    const err = e as { code?: string; type?: string };
+    console.warn(`launch offer: reading ${tier.code} failed (${keyMode()} key, ${err?.code ?? err?.type ?? "error"})`);
     return { tier, left: null, promoId: null };
   }
 }
