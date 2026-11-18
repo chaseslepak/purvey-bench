@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { startCheckout } from "./actions";
 import type { Plan } from "@/lib/billing/stripe";
 
-type PlanView = { key: Plan; label: string; price: string; per: string; note: string };
+type PlanView = { key: Plan; label: string; price: string; per: string; note: string; cta: string };
 
 const INCLUDED = [
   "A full public profile: retailers you call on, states, channels, terms",
@@ -14,7 +14,7 @@ const INCLUDED = [
 ];
 
 /** Brokers choose a plan and pay before they build their listing. */
-export function ChoosePlan({ plans, isOwner, lapsed, banner, founding }: { plans: PlanView[]; isOwner: boolean; lapsed: boolean; banner: string | null; founding: string | null }) {
+export function ChoosePlan({ plans, isOwner, lapsed, banner, offer }: { plans: PlanView[]; isOwner: boolean; lapsed: boolean; banner: string | null; offer: string | null }) {
   const [pending, start] = useTransition();
   const [chosen, setChosen] = useState<Plan | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -50,10 +50,10 @@ export function ChoosePlan({ plans, isOwner, lapsed, banner, founding }: { plans
             <h2 id={`plan-${p.key}`} className="bench-eyebrow" style={{ margin: 0 }}>{p.label}</h2>
             <div className="bench-price">{p.price}<span className="bench-price_per"> {p.per}</span></div>
             <p className="bench-muted" style={{ margin: 0 }}>{p.note}</p>
-            {founding && !lapsed && <p className="bench-spots" role="status">{founding} Enter your code on the secure checkout page.</p>}
+            {offer && !lapsed && <p className="bench-spots" role="status">{offer}</p>}
             {isOwner ? (
               <button type="button" className="button bench-btn-block w-button" disabled={pending} onClick={() => go(p.key)}>
-                {pending && chosen === p.key ? "Opening secure checkout…" : `Start monthly at ${p.price}`}
+                {pending && chosen === p.key ? "Opening secure checkout…" : p.cta}
               </button>
             ) : null}
           </section>

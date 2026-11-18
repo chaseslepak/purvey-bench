@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { PLANS, SELLABLE_PLANS, type Plan, stripe, stripeConfigured, listingPriceId } from "@/lib/billing/stripe";
+import { currentOffer } from "@/lib/billing/launch";
 import { hasListingAccess } from "@/lib/billing/subscription";
 import { syncSubscription } from "@/lib/billing/sync";
 import { requestOrigin } from "@/lib/origin";
@@ -278,7 +279,7 @@ export async function publishListing(): Promise<{ ok: true } | { ok: false; erro
  */
 export async function startCheckout(plan: Plan): Promise<{ ok: true; checkoutUrl?: string } | { ok: false; error: string }> {
   if (!(plan in PLANS)) return { ok: false, error: "Choose a plan." };
-  if (!SELLABLE_PLANS.includes(plan)) return { ok: false, error: "The annual plan is no longer offered. Choose monthly; a Founding Broker code covers your first 12 months." };
+  if (!SELLABLE_PLANS.includes(plan)) return { ok: false, error: "The annual plan is no longer offered. Choose monthly; any launch offer is applied at checkout." };
   const session = await getSession();
   if (!session?.org || session.org.type !== "broker") return { ok: false, error: "Only brokerages subscribe." };
   if (session.org.memberRole !== "owner") return { ok: false, error: "Only an owner can start billing." };
@@ -315,19 +316,33 @@ export async function startCheckout(plan: Plan): Promise<{ ok: true; checkoutUrl
     await Promise.all(open.data.map((cs) => stripe().checkout.sessions.expire(cs.id).catch(() => null)));
 
     const origin = await requestOrigin();
-    const checkout = await stripe().checkout.sessions.create({
-      mode: "subscription",
+    const base = {
+      mode: "subscription" as const,
       customer,
       client_reference_id: orgId,
       line_items: [{ price: await listingPriceId(plan), quantity: 1 }],
       subscription_data: { metadata: { org_id: orgId, plan } },
       metadata: { org_id: orgId, plan },
-      // Founding Broker codes (and any future Purvey code) are typed on the Stripe page.
-      allow_promotion_codes: true,
       expires_at: Math.floor(Date.now() / 1000) + 31 * 60, // Stripe's minimum is 30 minutes
       success_url: `${origin}/app/listing?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/app/listing?checkout=cancelled`,
-    });
+    };
+    // Launch pricing: the open tier (Founding, then Charter) is applied by the
+    // app, never typed. A brokerage that was live before doesn't get it again.
+    const { data: prior } = await admin.from("broker_listings").select("live_since").eq("org_id", orgId).maybeSingle();
+    const offer = prior?.live_since ? null : await currentOffer({ fresh: true });
+    let checkout = null;
+    if (offer) {
+      checkout = await stripe()
+        .checkout.sessions.create({ ...base, discounts: [{ promotion_code: offer.promoId }], metadata: { ...base.metadata, offer: offer.tier.key } })
+        .catch((e) => {
+          // The last spot went in the meantime: fall back to list price.
+          console.warn("launch offer not applied", offer.tier.key, e?.message);
+          return null;
+        });
+    }
+    // No open tier: brokers can still type a code Purvey gives them.
+    if (!checkout) checkout = await stripe().checkout.sessions.create({ ...base, allow_promotion_codes: true });
     return { ok: true, checkoutUrl: checkout.url! };
   } catch (e) {
     console.error("startCheckout failed", e);

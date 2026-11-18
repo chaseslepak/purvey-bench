@@ -68,7 +68,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       {session.org.type === "broker" && !hasListingAccess(sub) && session.org.memberRole === "owner" && displayState !== "paused_billing" && (
         <section className="bench-section bench-stack" aria-labelledby="plan-cta">
           <h2 id="plan-cta" className="bench-h-section">Choose a plan to start your listing</h2>
-          <p className="bench-muted" style={{ margin: 0 }}>$100 a month, cancel any time. Have a Founding Broker code? Enter it at checkout for 12 months free. You build your listing right after checkout.</p>
+          <p className="bench-muted" style={{ margin: 0 }}>$100 a month, cancel any time. Launch offers apply automatically at checkout: 12 months free for the first 10 brokerages, then 50% off for the next 25. You build your listing right after checkout.</p>
           <div><Link href="/app/listing" className="button w-button">Choose a plan</Link></div>
         </section>
       )}

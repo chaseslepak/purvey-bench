@@ -28,7 +28,7 @@ export function SignUpForm({ initialRole, turnstileSiteKey, next }: { initialRol
             <input type="radio" name="role" value="broker" checked={role === "broker"} onChange={() => setRole("broker")} />
             <span className="bench-choice_title">Broker</span>
             <span className="bench-small bench-muted" style={{ display: "block", marginTop: 4 }}>
-              List your brokerage for $100 a month, or $900 a year (25% off) for the first 12 brokerages.
+              List your brokerage for $100 a month. The first 10 brokerages get 12 months free, and the next 25 get 50% off for a year.
             </span>
           </label>
         </div>

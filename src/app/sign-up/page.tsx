@@ -24,7 +24,7 @@ export default async function SignUp({ searchParams }: { searchParams: Promise<{
           <h1 className="bench-h-section">{initialRole === "broker" ? "List your brokerage" : initialRole === "brand" ? "Find your broker, free" : "Create your account"}</h1>
           <p className="bench-lede">
             {initialRole === "broker"
-              ? "Brands search by the retailers you call on. Choose a plan after you confirm your email: $100 a month, or $900 for the year (25% off) while early access deals last."
+              ? "Brands search by the retailers you call on. Choose a plan after you confirm your email: $100 a month, with 12 months free for the first 10 brokerages and 50% off for the next 25."
               : initialRole === "brand"
                 ? "Search brokers by retailer, region, channel and distributor, see full profiles and message them directly. Free for brands, always."
                 : "Brands search, see full broker profiles and message brokers for free. Brokers list for $100 a month. No tiers, no lead fees, no paid placement."}

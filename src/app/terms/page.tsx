@@ -24,7 +24,7 @@ export default function Page() {
 
       <h2>3. Broker listings and billing</h2>
       <ul>
-        <li><strong>Plans.</strong> A Bench Listing is $100 a month, billed monthly. While early access lasts, the first 12 brokerages may instead pay $900 for a year, billed up front. Prices exclude any applicable taxes.</li>
+        <li><strong>Plans.</strong> A Bench Listing is $100 a month, billed monthly. Launch offers, while spots last: the first 10 brokerages pay nothing for their first 12 months, and the next 25 pay $50 a month for their first 12 months; each is applied once per brokerage at checkout, and the listing renews at the then-current price afterward. Prices exclude any applicable taxes.</li>
         <li><strong>Renewal.</strong> Plans renew automatically at the end of each month or year until cancelled. Payments are processed by Stripe; you authorize us to charge your payment method for each renewal.</li>
         <li><strong>Cancelling.</strong> Cancel any time from Billing. Your listing stays live until the end of the period you&rsquo;ve paid for and isn&rsquo;t renewed. We don&rsquo;t refund partial periods, except where the law requires it or where we end your listing without cause.</li>
         <li><strong>Failed payments.</strong> If a payment fails, your listing stays live for up to 7 days while we retry, then pauses until payment succeeds. Your listing and data are kept.</li>

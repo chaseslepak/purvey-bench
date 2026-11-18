@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { LOGO_SRCSET, LOGO_URL, siteLinks } from "@/lib/site";
 
@@ -50,7 +51,7 @@ export function SiteHeader() {
                     <a href={siteLinks.services} className="nav_links w-nav-link">Services</a>
                     <a href={siteLinks.about} className="nav_links w-nav-link">About</a>
                     <a href={siteLinks.blog} className="nav_link-insights">Insights</a>
-                    <a href="/" className="nav_link-insights" aria-current="page">Bench</a>
+                    <Link href="/" className="nav_link-insights" aria-current="page">Bench</Link>
                   </div>
                 </nav>
               </div>

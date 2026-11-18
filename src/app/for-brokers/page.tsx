@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { siteLinks } from "@/lib/site";
 import { CtaBand } from "@/components/site/CtaBand";
 import { ListingCard, type ListingCardData } from "@/components/listing/ListingCard";
 import { MarketList } from "@/components/site/MarketList";
-import { foundingLeft, foundingLine } from "@/lib/billing/founding";
+import { currentOffer, nextTierNote, offerLine } from "@/lib/billing/launch";
 import { loadDemand } from "@/lib/market";
 
 export const revalidate = 300;
@@ -42,8 +41,9 @@ const INCLUDED = [
 ];
 
 export default async function ForBrokers() {
-  const [demand, left] = await Promise.all([loadDemand(30), foundingLeft()]);
-  const founding = foundingLine(left);
+  const [demand, offer] = await Promise.all([loadDemand(30), currentOffer()]);
+  const line = offerLine(offer);
+  const next = nextTierNote(offer);
   return (
     <>
       <section className="bench-section is-cream bench-grid-2 bench-hero-split">
@@ -54,7 +54,7 @@ export default async function ForBrokers() {
             Purvey Bench is where emerging food and beverage brands look for brokers. They search by retailer, region,
             channel and distributor, so a complete listing puts you in front of the right brands.
           </p>
-          {founding && <p className="bench-spots">{founding} <a className="bench-link" href={siteLinks.contact}>Ask us for a code</a>.</p>}
+          {line && <p className="bench-spots">{line} {next}</p>}
           <div className="bench-row" style={{ marginTop: 8 }}>
             <Link href="/sign-up?role=broker" className="button w-button">Start your listing</Link>
             <Link href="/pricing" className="button bench-btn-ghost w-button">See pricing</Link>
