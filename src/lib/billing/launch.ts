@@ -5,6 +5,12 @@ import { TIERS, pickOffer, spotsLeftFrom, type CurrentOffer, type TierState } fr
 export { TIERS, offerLine, nextTierNote, offerPrice, LIST_PRICE } from "./launch-offer";
 export type { CurrentOffer } from "./launch-offer";
 
+/** Which kind of Stripe key is configured, never the key itself. */
+function keyMode() {
+  const k = process.env.STRIPE_SECRET_KEY ?? "";
+  return k.startsWith("sk_live") ? "live" : k.startsWith("sk_test") ? "test" : k.startsWith("rk_live") ? "restricted live" : k.startsWith("rk_test") ? "restricted test" : "no";
+}
+
 let cache: { at: number; offer: CurrentOffer | null | undefined } | null = null;
 const TTL = 60_000;
 
@@ -13,12 +19,16 @@ async function readTier(tier: (typeof TIERS)[number]): Promise<TierState> {
     const codes = await stripe().promotionCodes.list({ code: tier.code, limit: 1, expand: ["data.promotion.coupon"] });
     const promo = codes.data[0];
     const coupon = promo?.promotion?.coupon;
-    if (!promo || !coupon || typeof coupon === "string") return { tier, left: null, promoId: null };
+    if (!promo || !coupon || typeof coupon === "string") {
+      console.warn(`launch offer: ${tier.code} not found (${codes.data.length} codes, ${keyMode()} key)`);
+      return { tier, left: null, promoId: null };
+    }
     const left = promo.active ? spotsLeftFrom(coupon, tier.spots) : 0;
     const promoMax = promo.max_redemptions;
     const promoLeft = promoMax == null ? left : Math.max(0, promoMax - (promo.times_redeemed ?? 0));
     return { tier, left: left == null ? null : Math.min(left, promoLeft ?? left), promoId: promo.id };
-  } catch {
+  } catch (e) {
+    console.warn(`launch offer: reading ${tier.code} failed (${keyMode()} key)`, (e as Error)?.message);
     return { tier, left: null, promoId: null };
   }
 }
