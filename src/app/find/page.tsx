@@ -3,11 +3,13 @@ import Link from "next/link";
 import { ListingCard } from "@/components/listing/ListingCard";
 import { RetailerFilter } from "@/components/brand/RetailerFilter";
 import { SaveButton } from "@/components/brand/SaveButton";
+import { SaveSearch } from "@/components/brand/SaveSearch";
+import { describeSearch, toSavedFilters } from "@/lib/saved-search";
 import { getReference } from "@/lib/reference";
 import { FilterPanel } from "./FilterPanel";
 import { siteLinks } from "@/lib/site";
 import { briefToFit, cardData, parseFilters, search, type BriefRow, type Filters } from "@/lib/search";
-import { loadLiveListings, loadRatings } from "@/lib/search-data";
+import { loadLiveListings, loadRatings, loadResponsiveness } from "@/lib/search-data";
 import { loadBrand } from "@/lib/brand-data";
 import { profileToFit } from "@/lib/brand-profile";
 import type { FitBrief } from "@/lib/fit";
@@ -38,13 +40,16 @@ export default async function Find({ searchParams }: { searchParams: Promise<Rec
 
   let briefs: BriefRow[] = [];
   let saved = new Set<string>();
+  let messaged = new Set<string>();
   if (isBrand) {
-    const [b, s] = await Promise.all([
+    const [b, s, c] = await Promise.all([
       db.from("briefs").select("*").is("archived_at", null).order("updated_at", { ascending: false }),
       db.from("saved_brokers").select("listing_id"),
+      db.from("conversations").select("broker_org_id").eq("brand_org_id", session!.org!.id),
     ]);
     briefs = (b.data ?? []) as BriefRow[];
     saved = new Set((s.data ?? []).map((r) => r.listing_id as string));
+    messaged = new Set((c.data ?? []).map((r) => r.broker_org_id as string));
   }
   // Default to the most recently updated brief; "none" turns it off.
   const raw = await searchParams;
@@ -68,8 +73,9 @@ export default async function Find({ searchParams }: { searchParams: Promise<Rec
   const filters = { states: f.state ? [f.state] : [], retailers: f.retailer ? [f.retailer] : [], channels: f.channel ? [f.channel] : [], categories: f.category ? [f.category] : [], distributors: f.distributor ? [f.distributor] : [] };
   // Count brand and visitor searches once: not brokers browsing, not later pages of the same search.
   const logIt = session?.org?.type !== "broker" && !raw.page;
-  const [ratings] = await Promise.all([
+  const [ratings, response] = await Promise.all([
     loadRatings(r.items.map((i) => i.id)),
+    loadResponsiveness(r.items.map((i) => i.orgId)),
     logIt ? db.rpc("log_search", { p_filters: filters }) : null,
     logIt && r.items.length ? db.rpc("log_profile_events", { p_listings: r.items.map((i) => i.id), p_type: "search_impression" }) : null,
   ]);
@@ -132,6 +138,7 @@ export default async function Find({ searchParams }: { searchParams: Promise<Rec
               {r.total} broker{r.total === 1 ? "" : "s"}{useProfile ? " · ranked for your brand profile" : brief ? ` · ranked for “${brief.title}”` : ""}
             </h2>
             {!session && r.total > 0 && <Link className="bench-small bench-link" href="/sign-up?role=brand">Create a free account to see contact details</Link>}
+            {isBrand && activeFilters > 0 && <SaveSearch query={nextPath.replace(/^\/find\??/, "")} defaultName={describeSearch(toSavedFilters(raw), ref)} />}
           </div>
 
           {r.total === 0 ? (
@@ -161,7 +168,7 @@ export default async function Find({ searchParams }: { searchParams: Promise<Rec
               {r.items.map((l) => (
                 <li key={l.id} className="bench-result">
                   <Link href={`/brokers/${l.slug}`} className="bench-result_link">
-                    <ListingCard data={cardData(l, ref, conflictName, ratings.get(l.id))} />
+                    <ListingCard data={cardData(l, ref, conflictName, ratings.get(l.id), { response: response.get(l.orgId), messaged: messaged.has(l.orgId) })} />
                   </Link>
                   <div className="bench-result_actions">
                     <SaveButton listingId={l.id} name={l.name} initial={saved.has(l.id)} signedIn={!!session} isBrand={isBrand} next={nextPath} />

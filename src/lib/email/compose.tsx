@@ -133,6 +133,18 @@ export async function composeEmail(kind: Kind, payload: P, ctx: { appUrl: string
       paragraphs = [`Shown in search ${s(payload.impressions)} times · ${s(payload.views)} profile views · ${s(payload.reveals)} contact reveals · ${s(payload.conversations)} new conversations.`];
       cta = { label: "See analytics", href: `${ctx.appUrl}/app/analytics` };
       break;
+    case "saved_search_matches": {
+      const names = Array.isArray(payload.brokers) ? (payload.brokers as unknown[]).map(s) : [];
+      const n = Number(payload.count ?? names.length);
+      subject = `${n} new broker${n === 1 ? "" : "s"} for “${s(payload.name)}”`;
+      heading = `New brokers match “${s(payload.name)}”`;
+      paragraphs = [
+        `${n === 1 ? "A broker" : `${n} brokers`} matching ${s(payload.description)} went live on Purvey Bench this week${names.length ? `: ${names.join(", ")}${n > names.length ? ` and ${n - names.length} more` : ""}` : ""}.`,
+        "Ranking is by fit only. No broker pays for position.",
+      ];
+      cta = { label: "See the brokers", href: `${ctx.appUrl}${s(payload.href) || "/find"}` };
+      break;
+    }
     default: {
       // admin_* notifications
       const what: Record<string, string> = {

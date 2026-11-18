@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CtaBand } from "@/components/site/CtaBand";
 import { ListingCard, type ListingCardData } from "@/components/listing/ListingCard";
 import { MarketList } from "@/components/site/MarketList";
-import { earlyAccessLeft } from "@/lib/billing/early-access";
+import { currentOffer, nextTierNote, offerLine } from "@/lib/billing/launch";
 import { loadDemand } from "@/lib/market";
 
 export const revalidate = 300;
@@ -28,7 +28,7 @@ const HOW_BRANDS_FIND = [
 
 export const metadata: Metadata = {
   title: "For brokers",
-  description: "List your brokerage on Purvey Bench for $100 a month, or $900 a year (25% off) for early access brokerages. Brands find you by the retailers you actually call on.",
+  description: "List your brokerage on Purvey Bench for $100 a month, flat. Brands find you by the retailers you actually call on, and only brands that fit reach out.",
 };
 
 const INCLUDED = [
@@ -41,7 +41,9 @@ const INCLUDED = [
 ];
 
 export default async function ForBrokers() {
-  const [demand, left] = await Promise.all([loadDemand(30), earlyAccessLeft()]);
+  const [demand, offer] = await Promise.all([loadDemand(30), currentOffer()]);
+  const line = offerLine(offer);
+  const next = nextTierNote(offer);
   return (
     <>
       <section className="bench-section is-cream bench-grid-2 bench-hero-split">
@@ -52,9 +54,7 @@ export default async function ForBrokers() {
             Purvey Bench is where emerging food and beverage brands look for brokers. They search by retailer, region,
             channel and distributor, so a complete listing puts you in front of the right brands.
           </p>
-          {left > 0 && (
-            <p className="bench-spots"><strong>Early access:</strong> $900 for your first year, 25% off ($75 a month). Only {left} early access deal{left === 1 ? "" : "s"} still available.</p>
-          )}
+          {line && <p className="bench-spots">{line} {next}</p>}
           <div className="bench-row" style={{ marginTop: 8 }}>
             <Link href="/sign-up?role=broker" className="button w-button">Start your listing</Link>
             <Link href="/pricing" className="button bench-btn-ghost w-button">See pricing</Link>

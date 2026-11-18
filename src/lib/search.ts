@@ -2,6 +2,7 @@ import { z } from "zod";
 import { coverageSummary, topRetailers, type Freq } from "@/lib/coverage";
 import { fitScore, type FitBrief, type FitResult } from "@/lib/fit";
 import type { Reference } from "@/lib/reference";
+import { responsivenessLabel, type Responsiveness } from "@/lib/responsiveness";
 
 export const PAGE_SIZE = 24;
 
@@ -45,6 +46,8 @@ export type ListingRow = {
   verified: boolean;
   notTakingNewLines: boolean;
   updatedAt: string;
+  /** When the listing first went live (saved-search alerts). */
+  liveSince?: string | null;
 };
 
 export type BriefRow = {
@@ -66,7 +69,8 @@ export function briefToFit(b: BriefRow, ref: Reference): FitBrief {
 type FilterKey = "state" | "region" | "channel" | "category" | "distributor" | "retailer" | "verified" | "taking";
 const FILTER_KEYS: FilterKey[] = ["state", "region", "channel", "category", "distributor", "retailer", "verified", "taking"];
 
-function matches(l: ListingRow, f: Filters, ref: Reference, skip?: FilterKey): boolean {
+/** Does a listing pass every filter? (`skip` ignores one, for the empty-state hint.) */
+export function matches(l: ListingRow, f: Filters, ref: Reference, skip?: FilterKey): boolean {
   if (skip !== "state" && f.state && !l.states.includes(f.state)) return false;
   if (skip !== "region" && f.region) {
     const inRegion = ref.states.filter((s) => s.region_code === f.region).map((s) => s.code);
@@ -120,7 +124,7 @@ export function search(all: ListingRow[], f: Filters, ref: Reference, brief: Fit
   return { total: scored.length, page, pages, items: scored.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), sort, loosen };
 }
 
-export function cardData(l: Scored, ref: Reference, conflictCategory?: string | null, rating?: { average: number; count: number } | null) {
+export function cardData(l: Scored, ref: Reference, conflictCategory?: string | null, rating?: { average: number; count: number } | null, extra?: { response?: Responsiveness | null; messaged?: boolean }) {
   const channelNames = l.channels.map((c) => ref.channels.find((x) => x.id === c)?.name).filter(Boolean) as string[];
   return {
     name: l.name,
@@ -134,5 +138,7 @@ export function cardData(l: Scored, ref: Reference, conflictCategory?: string | 
     fit: l.fit ? { score: l.fit.score, reasons: l.fit.reasons } : null,
     conflict: l.fit?.conflict ? `Lists ${conflictCategory ?? "your category"} as a conflict` : null,
     rating: rating ?? null,
+    response: responsivenessLabel(extra?.response),
+    messaged: extra?.messaged ?? false,
   };
 }

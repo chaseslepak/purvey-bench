@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type Stripe from "stripe";
+import { forgetOffer } from "@/lib/billing/launch";
 import { stripe } from "@/lib/billing/stripe";
 import { subscriptionIdFromInvoice } from "@/lib/billing/subscription";
 import { syncSubscription } from "@/lib/billing/sync";
@@ -46,6 +47,7 @@ export async function POST(req: NextRequest) {
     switch (event.type) {
       case "checkout.session.completed": {
         const cs = event.data.object;
+        forgetOffer(); // a launch spot may have just been used
         subId = typeof cs.subscription === "string" ? cs.subscription : cs.subscription?.id ?? null;
         break;
       }

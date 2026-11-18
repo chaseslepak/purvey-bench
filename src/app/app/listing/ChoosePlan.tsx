@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { startCheckout } from "./actions";
 import type { Plan } from "@/lib/billing/stripe";
 
-type PlanView = { key: Plan; label: string; price: string; per: string; note: string };
+type PlanView = { key: Plan; label: string; price: string; per: string; note: string; cta: string };
 
 const INCLUDED = [
   "A full public profile: retailers you call on, states, channels, terms",
@@ -14,7 +14,7 @@ const INCLUDED = [
 ];
 
 /** Brokers choose a plan and pay before they build their listing. */
-export function ChoosePlan({ plans, isOwner, lapsed, banner, spotsLeft }: { plans: PlanView[]; isOwner: boolean; lapsed: boolean; banner: string | null; spotsLeft: number }) {
+export function ChoosePlan({ plans, isOwner, lapsed, banner, offer }: { plans: PlanView[]; isOwner: boolean; lapsed: boolean; banner: string | null; offer: string | null }) {
   const [pending, start] = useTransition();
   const [chosen, setChosen] = useState<Plan | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -45,32 +45,25 @@ export function ChoosePlan({ plans, isOwner, lapsed, banner, spotsLeft }: { plan
       </section>
 
       <div className={plans.length > 1 ? "bench-grid-2 bench-plans" : "bench-plans"}>
-        {plans.map((p) => {
-          const best = p.key === "annual";
-          return (
-            <section key={p.key} className={`bench-section bench-stack bench-plan${best ? " is-best" : ""}`} aria-labelledby={`plan-${p.key}`}>
-              <div className="bench-row" style={{ justifyContent: "space-between" }}>
-                <h2 id={`plan-${p.key}`} className="bench-eyebrow" style={{ margin: 0 }}>{p.label}</h2>
-                {best && <span className="bench-tag is-blue">Save 25%</span>}
-              </div>
-              <div className="bench-price">{p.price}<span className="bench-price_per"> {p.per}</span></div>
-              <p className="bench-muted" style={{ margin: 0 }}>{p.note}</p>
-              {best && <p className="bench-spots" role="status"><strong>Only {spotsLeft}</strong> early access deal{spotsLeft === 1 ? "" : "s"} still available.</p>}
-              {isOwner ? (
-                <button type="button" className={`button bench-btn-block w-button${best ? "" : " bench-btn-ghost"}`} disabled={pending} onClick={() => go(p.key)}>
-                  {pending && chosen === p.key ? "Opening secure checkout…" : best ? `Pay ${p.price} for the year` : `Start monthly at ${p.price}`}
-                </button>
-              ) : null}
-            </section>
-          );
-        })}
+        {plans.map((p) => (
+          <section key={p.key} className="bench-section bench-stack bench-plan" aria-labelledby={`plan-${p.key}`}>
+            <h2 id={`plan-${p.key}`} className="bench-eyebrow" style={{ margin: 0 }}>{p.label}</h2>
+            <div className="bench-price">{p.price}<span className="bench-price_per"> {p.per}</span></div>
+            <p className="bench-muted" style={{ margin: 0 }}>{p.note}</p>
+            {offer && !lapsed && <p className="bench-spots" role="status">{offer}</p>}
+            {isOwner ? (
+              <button type="button" className="button bench-btn-block w-button" disabled={pending} onClick={() => go(p.key)}>
+                {pending && chosen === p.key ? "Opening secure checkout…" : p.cta}
+              </button>
+            ) : null}
+          </section>
+        ))}
       </div>
-      {spotsLeft <= 0 && <p className="bench-notice" style={{ margin: 0 }}>The 12 early access annual deals have all been claimed. Monthly is $100, cancel any time.</p>}
       {!isOwner && <p className="bench-notice" style={{ margin: 0 }}>Only an owner on your team can choose a plan. Ask them to sign in and pick one; you can build the listing together after that.</p>}
       {error && <p className="bench-notice is-error" role="alert" style={{ margin: 0 }}>{error}</p>}
 
       <section className="bench-section bench-stack" aria-labelledby="inc-h">
-        <h2 id="inc-h" className="bench-eyebrow" style={{ margin: 0 }}>Both plans include</h2>
+        <h2 id="inc-h" className="bench-eyebrow" style={{ margin: 0 }}>Your listing includes</h2>
         <ul className="bench-checklist">
           {INCLUDED.map((t) => <li key={t}>{t}</li>)}
         </ul>

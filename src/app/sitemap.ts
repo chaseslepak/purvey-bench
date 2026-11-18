@@ -5,16 +5,22 @@ import { APP_URL } from "@/lib/site";
 
 export const revalidate = 3600;
 
-/** Public pages plus every live broker profile (anon key: RLS shows live listings only). */
+/** Public pages, every live broker profile, and a page per covered retailer (anon key: RLS shows live listings only). */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const pages = ["", "/find", "/for-brokers", "/pricing"].map((p) => ({ url: `${APP_URL}${p}`, changeFrequency: "weekly" as const }));
+  const pages = ["", "/find", "/for-brokers", "/pricing", "/brokers-for", "/resources/broker-kit"].map((p) => ({ url: `${APP_URL}${p}`, changeFrequency: "weekly" as const }));
   if (!supabaseConfigured()) return pages;
   const db = createClient(env.supabaseUrl, env.supabaseAnonKey, { auth: { persistSession: false } });
-  const { data } = await db.from("broker_listings").select("updated_at, organizations!inner(slug)").eq("status", "live");
+  const { data } = await db.from("broker_listings").select("updated_at, organizations!inner(slug), broker_retailers(retailers(slug))").eq("status", "live");
   const profiles = (data ?? []).map((l) => ({
     url: `${APP_URL}/brokers/${(l.organizations as unknown as { slug: string }).slug}`,
     lastModified: l.updated_at,
     changeFrequency: "weekly" as const,
   }));
-  return [...pages, ...profiles];
+  // One page per retailer at least one live broker calls on.
+  const retailerSlugs = new Set<string>();
+  for (const l of (data ?? []) as unknown as { broker_retailers: { retailers: { slug: string } | null }[] }[]) {
+    for (const r of l.broker_retailers ?? []) if (r.retailers?.slug) retailerSlugs.add(r.retailers.slug);
+  }
+  const retailers = [...retailerSlugs].sort().map((slug) => ({ url: `${APP_URL}/brokers-for/${slug}`, changeFrequency: "weekly" as const }));
+  return [...pages, ...profiles, ...retailers];
 }

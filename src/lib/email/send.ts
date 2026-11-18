@@ -4,6 +4,9 @@ import { APP_URL } from "@/lib/site";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { composeEmail } from "./compose";
 import type { Kind } from "./kinds";
+import type { ListingRow } from "@/lib/search";
+import type { Reference } from "@/lib/reference";
+import { describeSearch, newMatches, searchHref, toSavedFilters } from "@/lib/saved-search";
 
 /**
  * Email delivery from the outbox.
@@ -146,4 +149,32 @@ export async function enqueueAdminDigest(): Promise<number> {
 export async function sendNow(to: string, kind: Kind, payload: Record<string, unknown>): Promise<boolean> {
   if (!emailConfigured()) return false;
   try { await deliver(to, kind, payload, null); return true; } catch { return false; }
+}
+
+/**
+ * Weekly: for each saved search with alerts on, email whoever saved it when
+ * brokers that match went live since the last alert. Needs the live listings
+ * and reference lists (both public), passed in by the cron.
+ */
+export async function enqueueSavedSearchAlerts(all: ListingRow[], ref: Reference): Promise<number> {
+  const db = createAdminClient();
+  const { data: searches } = await db.from("saved_searches").select("id, created_by, name, filters, last_alert_at").eq("alerts", true).not("created_by", "is", null).limit(5000);
+  const now = new Date().toISOString();
+  let n = 0;
+  for (const s of searches ?? []) {
+    const f = toSavedFilters(Object.fromEntries(Object.entries(s.filters as Record<string, unknown>).map(([k, v]) => [k, String(v)])));
+    const hits = newMatches(all, f, ref, s.last_alert_at as string);
+    if (hits.length) {
+      const { data: prefs } = await db.from("notification_prefs").select("email_opt_outs").eq("user_id", s.created_by).maybeSingle();
+      if (!(prefs?.email_opt_outs as Record<string, boolean> | null)?.saved_search_matches) {
+        await db.from("email_outbox").insert({
+          to_user_id: s.created_by, kind: "saved_search_matches",
+          payload: { name: s.name, description: describeSearch(f, ref), count: hits.length, brokers: hits.slice(0, 5).map((l) => l.name), href: searchHref(f) },
+        });
+        n++;
+      }
+    }
+    await db.from("saved_searches").update({ last_alert_at: now }).eq("id", s.id);
+  }
+  return n;
 }

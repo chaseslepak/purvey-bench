@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { FOOTER_COPYRIGHT, FOOTER_TAGLINE, siteLinks } from "@/lib/site";
 
 /** The purveycpg.com footer: same markup, classes, copy and URLs. */
@@ -19,7 +20,7 @@ export function SiteFooter() {
             <div className="footer_column scroll-into-view">
               <a href={siteLinks.about} className="footer_link">About</a>
               <a href={siteLinks.blog} className="footer_link">Insights</a>
-              <a href="/" className="footer_link">Bench</a>
+              <Link href="/" className="footer_link">Bench</Link>
             </div>
             <div className="footer_column scroll-into-view">
               <a href={siteLinks.contact} className="footer_link">Contact</a>
