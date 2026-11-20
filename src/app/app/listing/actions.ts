@@ -5,6 +5,7 @@ import { z } from "zod";
 import { PLANS, SELLABLE_PLANS, type Plan, stripe, stripeConfigured, listingPriceId } from "@/lib/billing/stripe";
 import { currentOffer } from "@/lib/billing/launch";
 import { hasListingAccess } from "@/lib/billing/subscription";
+import { FREE_LISTINGS, ensureFreeAccess } from "@/lib/billing/free";
 import { syncSubscription } from "@/lib/billing/sync";
 import { requestOrigin } from "@/lib/origin";
 import { getSession } from "@/lib/session";
@@ -260,11 +261,13 @@ export async function requestVerification(): Promise<{ ok: boolean; error?: stri
   return { ok: true };
 }
 
-/** Publish the listing. Brokers pay before building, so this goes straight live. */
+/** Publish the listing. Listings are free, so this goes straight live. */
 export async function publishListing(): Promise<{ ok: true } | { ok: false; error: string }> {
   const { session, db, listing } = await context();
   if (session.org!.memberRole !== "owner") return { ok: false, error: "Only an owner can publish the listing." };
-  const { data: sub } = await db.from("subscriptions").select("status, comped, current_period_end").eq("org_id", listing.org_id).maybeSingle();
+  const sub = FREE_LISTINGS
+    ? await ensureFreeAccess(listing.org_id)
+    : (await db.from("subscriptions").select("status, comped, current_period_end").eq("org_id", listing.org_id).maybeSingle()).data;
   if (!hasListingAccess(sub)) return { ok: false, error: "Choose a plan first." };
   const { error } = await db.rpc("submit_listing");
   if (error) return { ok: false, error: error.message.replace(/^.*?: /, "") };

@@ -320,7 +320,7 @@ export function ListingBuilder({ initial, refs, banner }: { initial: BuilderInit
           {(initial.displayState === "draft" || initial.displayState === "submitted") && (
             <div className="bench-card bench-stack">
               <h2 className="bench-eyebrow" style={{ margin: 0 }}>Go live</h2>
-              <p className="bench-small" style={{ margin: 0 }}>Your plan is paid. Publish once you have a description, a public contact, your states and at least three retailers.</p>
+              <p className="bench-small" style={{ margin: 0 }}>Listing is free. Publish once you have a description, a public contact, your states and at least three retailers.</p>
               {initial.isOwner ? (
                 <button type="button" className="button bench-btn-block w-button" onClick={submit} disabled={submitting}>
                   {submitting ? "Publishing…" : "Publish listing"}

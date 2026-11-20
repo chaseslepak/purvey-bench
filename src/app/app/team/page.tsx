@@ -35,7 +35,7 @@ export default async function Team({ searchParams }: { searchParams: Promise<{ o
       <div className="text_title">{session.org.name}</div>
       <h1 className="bench-h-section">Team</h1>
       <p className="bench-lede" style={{ margin: 0 }}>
-        Add as many teammates as you like{isBrand ? ", free" : " at no extra cost: the $100 a month covers your whole brokerage"}. Everyone shares the {isBrand ? "briefs, saved brokers, inbox and deal rooms" : "listing, inbox, analytics and deal rooms"}. Owners {isBrand ? "invite people and manage the team" : "also manage billing and verification"}; anyone can be assigned a conversation.
+        Add as many teammates as you like{isBrand ? ", free" : ", free"}. Everyone shares the {isBrand ? "briefs, saved brokers, inbox and deal rooms" : "listing, inbox, analytics and deal rooms"}. Owners {isBrand ? "invite people and manage the team" : "also manage verification"}; anyone can be assigned a conversation.
       </p>
       {sp.err && <p className="bench-notice is-error" role="alert">{sp.err}</p>}
       {sp.ok && <p className="bench-notice" role="status">{sp.ok}</p>}

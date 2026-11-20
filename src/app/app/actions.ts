@@ -59,7 +59,7 @@ export async function completeOnboarding(_prev: FormState, form: FormData): Prom
   });
   if (error) return { error: error.message.includes("already belong") ? "You already belong to an organization." : "Something went wrong. Please try again." };
 
-  // Brokers choose a plan first; brands go back to where they were headed, if anywhere.
+  // Brokers build their (free) listing next; brands go back to where they were headed, if anywhere.
   if (parsed.data.type === "brand" && next.startsWith("/") && !next.startsWith("/app/onboarding")) redirect(next);
   redirect(parsed.data.type === "broker" ? "/app/listing?welcome=1" : "/app/brand?welcome=1");
 }
