@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FREE_LISTINGS } from "@/lib/billing/free-flag";
 import { BenchNavLinks, type NavItem } from "./BenchNavLinks";
 import { getSession } from "@/lib/session";
 
@@ -18,7 +19,7 @@ export async function BenchNav() {
     ...(!session ? [{ href: "/for-brokers", label: "For brokers" }, { href: "/pricing", label: "Pricing" }] : []),
     ...(session ? [{ href: "/app/inbox", label: "Inbox" }] : []),
     ...(session?.org ? [{ href: "/app/team", label: "Team" }] : []),
-    ...(type === "broker" && session?.org?.memberRole === "owner" ? [{ href: "/app/billing", label: "Billing" }] : []),
+    ...(type === "broker" && session?.org?.memberRole === "owner" && !FREE_LISTINGS ? [{ href: "/app/billing", label: "Billing" }] : []),
     ...(session ? [{ href: "/app/settings", label: "Settings" }] : []),
     ...(session?.isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
   ];

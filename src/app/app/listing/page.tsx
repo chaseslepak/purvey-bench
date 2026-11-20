@@ -6,6 +6,7 @@ import { ChoosePlan } from "./ChoosePlan";
 import { PLANS, SELLABLE_PLANS, stripe, stripeConfigured } from "@/lib/billing/stripe";
 import { currentOffer, offerLine, offerPrice } from "@/lib/billing/launch";
 import { hasListingAccess } from "@/lib/billing/subscription";
+import { FREE_LISTINGS, ensureFreeAccess } from "@/lib/billing/free";
 import { syncSubscription } from "@/lib/billing/sync";
 import type { Freq } from "@/lib/coverage";
 import { getReference } from "@/lib/reference";
@@ -45,8 +46,10 @@ export default async function ListingPage({ searchParams }: { searchParams: Prom
   const { data: listing } = await db.from("broker_listings").select("*").eq("org_id", session.org.id).single();
   if (!listing) redirect("/app");
 
-  // Pay first: brokers choose a plan before they can build their listing.
-  const { data: sub } = await db.from("subscriptions").select("status, comped, current_period_end").eq("org_id", session.org.id).maybeSingle();
+  // Listings are free: every brokerage gets complimentary access. (Paid mode: brokers choose a plan first.)
+  const sub = FREE_LISTINGS
+    ? await ensureFreeAccess(session.org.id)
+    : (await db.from("subscriptions").select("status, comped, current_period_end").eq("org_id", session.org.id).maybeSingle()).data;
   if (!hasListingAccess(sub)) {
     // Launch offers are for first-time listings only; a lapsed listing pays list price.
     const offer = listing.live_since ? null : await currentOffer();

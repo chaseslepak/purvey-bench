@@ -4,7 +4,7 @@ import { siteLinks } from "@/lib/site";
 
 export const metadata: Metadata = { title: "Terms of Service", description: "The terms for using Purvey Bench as a brand or a broker, including listing subscriptions and billing." };
 
-const UPDATED = "November 12, 2026";
+const UPDATED = "November 20, 2026";
 
 /** Plain-English terms that describe how Bench actually works. Reviewed by Purvey before publishing. */
 export default function Page() {
@@ -24,12 +24,12 @@ export default function Page() {
 
       <h2>3. Broker listings and billing</h2>
       <ul>
-        <li><strong>Plans.</strong> A Bench Listing is $100 a month, billed monthly. Launch offers, while spots last: the first 10 brokerages pay nothing for their first 12 months, and the next 25 pay $50 a month for their first 12 months; each is applied once per brokerage at checkout, and the listing renews at the then-current price afterward. Prices exclude any applicable taxes.</li>
+        <li><strong>Price.</strong> Listing on Purvey Bench is free. We don&rsquo;t ask for a payment method. If we ever introduce a paid plan, we&rsquo;ll give brokers at least 30 days&rsquo; notice, and nothing is charged unless you choose to subscribe. The terms below on renewal, cancelling and failed payments apply only to a paid plan you choose.</li>
         <li><strong>Renewal.</strong> Plans renew automatically at the end of each month or year until cancelled. Payments are processed by Stripe; you authorize us to charge your payment method for each renewal.</li>
         <li><strong>Cancelling.</strong> Cancel any time from Billing. Your listing stays live until the end of the period you&rsquo;ve paid for and isn&rsquo;t renewed. We don&rsquo;t refund partial periods, except where the law requires it or where we end your listing without cause.</li>
         <li><strong>Failed payments.</strong> If a payment fails, your listing stays live for up to 7 days while we retry, then pauses until payment succeeds. Your listing and data are kept.</li>
         <li><strong>Price changes.</strong> We&rsquo;ll give at least 30 days&rsquo; notice by email before a price change applies to your next renewal.</li>
-        <li><strong>No paid placement.</strong> Every listing pays the same. Search ranking comes only from fit to a brand&rsquo;s brief or filters, never from payment.</li>
+        <li><strong>No paid placement.</strong> Every listing is treated the same. Search ranking comes only from fit to a brand&rsquo;s brief or filters, never from payment.</li>
       </ul>
 
       <h2>4. What you post</h2>

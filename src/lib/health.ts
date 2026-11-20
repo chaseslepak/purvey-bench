@@ -3,6 +3,7 @@ import { stripe, stripeConfigured, PLANS } from "@/lib/billing/stripe";
 import { currentOffer } from "@/lib/billing/launch";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { supabaseConfigured } from "@/lib/env";
+import { FREE_LISTINGS } from "@/lib/billing/free-flag";
 
 export type Check = { ok: boolean; note: string };
 export type Health = { ok: boolean; at: string; checks: Record<string, Check> };
@@ -63,11 +64,15 @@ let cached: { at: number; h: Health } | null = null;
 /** Everything a broker or brand needs to work end to end. Cached 60s so the public endpoint can't be used to hammer Stripe. */
 export async function health({ fresh = false } = {}): Promise<Health> {
   if (!fresh && cached && Date.now() - cached.at < 60_000) return cached.h;
-  const [stripeCheck, offer, db, migrations] = await Promise.all([checkStripe(), checkOffer(), checkDb(), checkMigrations()]);
-  const checks: Record<string, Check> = {
-    stripe: stripeCheck,
+  const [db, migrations] = await Promise.all([checkDb(), checkMigrations()]);
+  // Listings are free, so Stripe is only checked when paid listings are switched back on.
+  const billing: Record<string, Check> = FREE_LISTINGS ? {} : await Promise.all([checkStripe(), checkOffer()]).then(([stripe, offer]) => ({
+    stripe,
     launch_offer: offer,
     stripe_webhook: checkEnv("STRIPE_WEBHOOK_SECRET", "paid listings won't go live"),
+  }));
+  const checks: Record<string, Check> = {
+    ...billing,
     database: db,
     migrations,
     email: checkEnv("RESEND_API_KEY", "no notifications or digests"),

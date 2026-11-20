@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PortalButton } from "./PortalButton";
 import { PLANS } from "@/lib/billing/stripe";
+import { FREE_LISTINGS } from "@/lib/billing/free";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -26,9 +27,9 @@ export default async function Billing() {
     <section className="bench-section bench-stack">
       <div className="text_title">{session.org.name}</div>
       <h1 className="bench-h-section">Billing</h1>
-      <p className="bench-lede" style={{ margin: 0 }}>Bench Listing: {PLANS.monthly.price} a month. No tiers, lead fees or paid placement.</p>
+      <p className="bench-lede" style={{ margin: 0 }}>{FREE_LISTINGS ? "Listing on Purvey Bench is free. No subscription, lead fees or paid placement." : `Bench Listing: ${PLANS.monthly.price} a month. No tiers, lead fees or paid placement.`}</p>
       {sub?.comped ? (
-        <p className="bench-notice" style={{ margin: 0 }}>Your listing is complimentary, courtesy of Purvey. There&rsquo;s nothing to pay.</p>
+        <p className="bench-notice" style={{ margin: 0 }}>Your listing is free. There&rsquo;s nothing to pay and no card on file.</p>
       ) : !sub?.stripe_subscription_id ? (
         <p className="bench-notice" style={{ margin: 0 }}>
           You haven&rsquo;t chosen a plan yet. <Link className="bench-link" href="/app/listing">Choose a plan</Link> to start building your listing.

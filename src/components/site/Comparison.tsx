@@ -1,9 +1,9 @@
 const ROWS: [string, string, string][] = [
-  ["Price", "Free, always", "$100 a month, flat"],
+  ["Price", "Free", "Free"],
   ["Search and full broker profiles", "Yes", "Your listing is searchable"],
   ["Contact details", "Yes, with a free account", "Shown to signed-in brands"],
   ["Messaging", "Start conversations", "Reply to brands that reach out"],
-  ["Ranking", "By fit to your brief", "By fit only. Payment never changes position"],
+  ["Ranking", "By fit to your brief", "By fit only. Nobody can pay to rank higher"],
   ["Verification", "Verified badge on vetted brokers", "Purvey checks references and retailers"],
   ["Placement help", "Ask Purvey to run a placement", "—"],
 ];

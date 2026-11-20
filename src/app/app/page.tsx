@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { loadBrand } from "@/lib/brand-data";
 import { brandChecklist, completeness } from "@/lib/brand-profile";
 import { hasListingAccess } from "@/lib/billing/subscription";
+import { FREE_LISTINGS, ensureFreeAccess } from "@/lib/billing/free";
 import { loadThreads } from "@/lib/inbox/load";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -36,6 +37,10 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     }
     const { data: subscription } = await supabase.from("subscriptions").select("current_period_end, comped, status, plan").eq("org_id", session.org.id).maybeSingle();
     sub = subscription;
+    if (FREE_LISTINGS && !sub?.comped && session.org.type === "broker") {
+      const comped = await ensureFreeAccess(session.org.id);
+      if (comped?.comped) sub = { current_period_end: comped.current_period_end ?? null, comped: true, status: comped.status ?? null, plan: (comped as { plan?: string | null }).plan ?? null };
+    }
   }
 
   let brandStrength: { pct: number; next: string | null } | null = null;
@@ -59,7 +64,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
         {welcome && (
           <p className="bench-notice" role="status">
             {welcome === "broker"
-              ? "Welcome to Purvey Bench. Next, choose a plan and build your listing. Brands see it once you publish."
+              ? "Welcome to Purvey Bench. Next, build your listing. It's free, and brands see it once you publish."
               : "Welcome to Purvey Bench. Search, profiles and messaging are free for brands, always."}
           </p>
         )}
@@ -89,9 +94,9 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
             <p className="bench-small bench-muted">At 80% or more you can ask Purvey to verify your listing.</p>
           </div>
           <div className="bench-card bench-stack">
-            <div className="bench-eyebrow">{sub?.plan === "annual" ? "Annual plan renews" : sub?.plan === "monthly" ? "Monthly plan renews" : "Next billing date"}</div>
+            <div className="bench-eyebrow">{sub?.comped ? "Plan" : sub?.plan === "annual" ? "Annual plan renews" : sub?.plan === "monthly" ? "Monthly plan renews" : "Next billing date"}</div>
             <div className="bench-h-section" style={{ fontSize: "1.5rem" }}>
-              {sub?.comped ? "Complimentary" : sub?.current_period_end ? new Date(sub.current_period_end).toLocaleDateString("en-US", { dateStyle: "medium" }) : "Not started"}
+              {sub?.comped ? "Free" : sub?.current_period_end ? new Date(sub.current_period_end).toLocaleDateString("en-US", { dateStyle: "medium" }) : "Not started"}
             </div>
           </div>
         </section>
@@ -99,8 +104,8 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
 
       {session.org.type === "broker" && (
         <div className="bench-row">
-          <Link href="/app/listing" className="button w-button">{hasListingAccess(sub) ? "Edit your listing" : "Choose a plan"}</Link>
-          <Link href="/app/billing" className="button bench-btn-ghost w-button">Billing</Link>
+          <Link href="/app/listing" className="button w-button">{hasListingAccess(sub) ? "Edit your listing" : "Build your listing"}</Link>
+          {!sub?.comped && <Link href="/app/billing" className="button bench-btn-ghost w-button">Billing</Link>}
         </div>
       )}
 

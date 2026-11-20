@@ -25,7 +25,7 @@ export default async function Onboarding({ searchParams }: { searchParams: Promi
           <h1 className="bench-h-section">Tell us about your company</h1>
           <p className="bench-lede">
             You can invite teammates once your account is set up. Brands are free, always. Brokers set up their
-            listing next: start your plan ($100 a month; the first 10 brokerages get 12 months free and the next 25 get 50% off, applied at checkout), build it, then publish.
+            listing next, for free: build it, then publish.
           </p>
         </div>
         <div className="bench-card is-white">
