@@ -118,6 +118,19 @@ export async function composeEmail(kind: Kind, payload: P, ctx: { appUrl: string
       paragraphs = [payload.title ? `“${s(payload.title)}”` : "A brand you worked with on Bench reviewed you.", "You can reply publicly, or flag it for Purvey if something's wrong."];
       cta = { label: "See your reviews", href: `${ctx.appUrl}/app/reviews` };
       break;
+    case "account_ready": {
+      const broker = s(payload.org_type) === "broker";
+      subject = `Your Purvey Bench account for ${s(payload.org)} is ready`;
+      heading = `Welcome to Purvey Bench, ${s(payload.name) || "there"}`;
+      paragraphs = [
+        `Purvey set up ${s(payload.org)} on Purvey Bench for you${broker ? ": your broker listing is started, so brands can find you once it's published." : ", with your brand profile filled in from what you've shared with us."}`,
+        ...(payload.note ? [`“${s(payload.note)}” — ${s(payload.from) || "Purvey"}`] : []),
+        `The button below signs you in and confirms your email in one step. It's just for ${s(payload.email)} and works for 14 days. There's no password: next time, sign in with your email at bench.purveycpg.com.`,
+        broker ? "Listing on Bench is free. Check your listing, add anything missing and publish it." : "Bench is free for brands. Check your profile, then search brokers who already call on the retailers you want.",
+      ];
+      cta = { label: "Sign in to Purvey Bench", href: s(payload.link) };
+      break;
+    }
     case "team_invite":
       subject = `${s(payload.inviter) || "A teammate"} invited you to ${s(payload.org)} on Purvey Bench`;
       heading = `Join ${s(payload.org)} on Purvey Bench`;

@@ -19,11 +19,12 @@ export const brandSetupSchema = z.object({
     hq_state: state.optional().nullable(),
     logo_url: z.url().optional().nullable(),
   }),
+  /** The owner. Optional: leave it out to build the profile first and add the owner later from Admin → Accounts. */
   contact: z.object({
     name: z.string().trim().min(1).max(120),
     email: z.email().transform((v) => v.toLowerCase()),
     phone: txt(40),
-  }),
+  }).optional().nullable(),
   profile: z.object({
     about: txt(2000),
     founded_year: z.number().int().min(1800).max(2100).optional().nullable(),
