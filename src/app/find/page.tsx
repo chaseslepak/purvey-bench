@@ -185,7 +185,8 @@ export default async function Find({ searchParams }: { searchParams: Promise<Rec
               {r.page < r.pages && <Link className="button bench-btn-ghost is-small w-button" href={href(f, { page: r.page + 1 })}>Next</Link>}
             </nav>
           )}
-          <p className="bench-small bench-muted" style={{ textAlign: "center", margin: 0 }}>
+          {/* On a white card: blue links on the grey page background fail contrast. */}
+          <p className="bench-section bench-small" style={{ textAlign: "center", margin: 0, padding: "14px 20px" }}>
             Browse brokers <Link className="bench-link" href="/brokers-in">by state</Link> or <Link className="bench-link" href="/brokers-for">by retailer</Link>.
           </p>
         </section>
