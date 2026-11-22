@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { deleteTemplate } from "./actions";
 import { ConfirmSubmit } from "@/components/ui/ConfirmSubmit";
 import { AwayForm, NotificationsForm, ProfileForm, TemplateForm } from "./Forms";
+import { SetPasswordForm } from "@/components/auth/ResetForms";
 import { getSession } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -13,6 +14,7 @@ export default async function Settings() {
   if (!session?.org) redirect("/app/onboarding");
   const db = await createClient();
   const isBroker = session.org.type === "broker";
+  const hasPassword = session.metadata?.has_password === true;
   const [{ data: me }, { data: prefs }, { data: templates }, listing] = await Promise.all([
     db.from("users").select("name, phone").eq("id", session.userId).single(),
     db.from("notification_prefs").select("email_new_message, email_weekly_summary").eq("user_id", session.userId).maybeSingle(),
@@ -26,6 +28,11 @@ export default async function Settings() {
         <h1 className="bench-h-section">Settings</h1>
       </section>
       <section className="bench-section bench-stack" aria-labelledby="s-profile"><h2 id="s-profile" className="bench-h-section" style={{ fontSize: "1.5rem" }}>Your details</h2><ProfileForm name={me?.name ?? ""} phone={me?.phone ?? ""} email={session.email} /></section>
+      <section className="bench-section bench-stack" aria-labelledby="s-pw">
+        <h2 id="s-pw" className="bench-h-section" style={{ fontSize: "1.5rem" }}>Password</h2>
+        <p className="bench-muted" style={{ margin: 0 }}>{hasPassword ? "Change the password you sign in with." : "Add a password to sign in without waiting for an email."} Emailed sign-in links keep working either way.</p>
+        <SetPasswordForm label={hasPassword ? "Change password" : "Set password"} />
+      </section>
       <section className="bench-section bench-stack" aria-labelledby="s-email"><h2 id="s-email" className="bench-h-section" style={{ fontSize: "1.5rem" }}>Email</h2><NotificationsForm freq={prefs?.email_new_message ?? "instant"} weekly={prefs?.email_weekly_summary ?? true} isBroker={isBroker} /></section>
       {isBroker && listing.data && (
         <section className="bench-section bench-stack" aria-labelledby="s-away"><h2 id="s-away" className="bench-h-section" style={{ fontSize: "1.5rem" }}>Away mode</h2><AwayForm message={listing.data.away_message ?? ""} notTaking={listing.data.not_taking_new_lines} /></section>

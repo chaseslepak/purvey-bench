@@ -163,3 +163,21 @@ export async function redeemWelcome(token: string): Promise<{ url: string } | { 
   const next = (m?.organizations as unknown as { type: string } | null)?.type === "broker" ? "/app/listing?welcome=1" : "/app/brand?welcome=1";
   return { url: `/auth/confirm?token_hash=${encodeURIComponent(link.properties.hashed_token)}&type=email&next=${encodeURIComponent(next)}` };
 }
+
+/**
+ * Set a temporary password for an organization's owner, for Purvey to share
+ * with them directly (by phone, say). They can change it in Settings, and
+ * emailed sign-in links keep working.
+ */
+export async function setOwnerPassword(orgId: string, password: string): Promise<{ ok: string } | { error: string }> {
+  if (password.length < 8 || password.length > 72) return { error: "Use 8 to 72 characters." };
+  const db = createAdminClient();
+  const { data: m } = await db.from("org_members").select("user_id, users!org_members_user_id_fkey(email)").eq("org_id", orgId).eq("role", "owner").limit(1).maybeSingle();
+  if (!m) return { error: "This account has no owner yet. Add the owner first." };
+  const { data: au } = await db.auth.admin.getUserById(m.user_id as string);
+  const { error } = await db.auth.admin.updateUserById(m.user_id as string, { password, user_metadata: { ...(au.user?.user_metadata ?? {}), has_password: true } });
+  if (error) return { error: /weak|password/i.test(error.message) ? "Choose a stronger password." : `Couldn't set the password: ${error.message}` };
+  const email = (m.users as unknown as { email: string } | null)?.email;
+  await db.from("product_events").insert({ name: "admin_password_set", org_id: orgId, props: { to: email } });
+  return { ok: `Temporary password set for ${email}. Share it with them directly; they can change it in Settings.` };
+}

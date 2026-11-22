@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin";
-import { accountSchema, addOwner, createAccount, sendWelcome } from "@/lib/admin-accounts";
+import { accountSchema, addOwner, createAccount, sendWelcome, setOwnerPassword } from "@/lib/admin-accounts";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 function back(msg: { ok?: string; err?: string }, path = "/admin/accounts"): never {
@@ -61,4 +61,12 @@ export async function setOwner(f: FormData) {
     back("error" in w ? { err: `Owner added, but ${w.error}` } : { ok: `Owner added. ${w.ok}` });
   }
   back({ ok: `${email.data} is now the owner of ${org!.name}. Nothing was sent yet.` });
+}
+
+/** Give the owner a temporary password to share directly. */
+export async function setTempPassword(f: FormData) {
+  await requireAdmin();
+  const orgId = z.uuid().parse(String(f.get("orgId")));
+  const r = await setOwnerPassword(orgId, String(f.get("password") ?? ""));
+  back("error" in r ? { err: r.error } : { ok: r.ok });
 }

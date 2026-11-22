@@ -19,7 +19,7 @@ export default async function SignIn({ searchParams }: { searchParams: Promise<{
         <div className="bench-stack">
           <div className="text_title">Purvey Bench</div>
           <h1 className="bench-h-section">Sign in</h1>
-          <p className="bench-lede">We&rsquo;ll email you a one-time link. No password to remember.</p>
+          <p className="bench-lede">Get a one-time sign-in link by email, or use your password if you&rsquo;ve set one.</p>
         </div>
         <div className="bench-card is-white bench-stack">
           {error && ERRORS[error] && <p className="bench-notice is-warn" role="alert">{ERRORS[error]}</p>}

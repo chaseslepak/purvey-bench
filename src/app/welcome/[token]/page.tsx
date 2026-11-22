@@ -33,12 +33,12 @@ export default async function Welcome({ params, searchParams }: { params: Promis
         </>
       ) : (
         <>
-          <p className="bench-lede" style={{ margin: 0 }}>Purvey set up your account. One click signs you in and confirms your email. There&rsquo;s no password to remember.</p>
+          <p className="bench-lede" style={{ margin: 0 }}>Purvey set up your account. One click signs you in and confirms your email.</p>
           <form action={claimAccount}>
             <input type="hidden" name="token" value={token} />
             <button type="submit" className="button w-button">Sign in to Purvey Bench</button>
           </form>
-          <p className="bench-small bench-muted" style={{ margin: 0 }}>Next time, sign in with your email at bench.purveycpg.com.</p>
+          <p className="bench-small bench-muted" style={{ margin: 0 }}>Next time, sign in with an emailed link, or add a password in Settings to use that instead.</p>
         </>
       )}
     </section>
