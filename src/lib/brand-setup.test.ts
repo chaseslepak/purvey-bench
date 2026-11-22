@@ -13,7 +13,11 @@ describe("brandSetupSchema", () => {
     const p = brandSetupSchema.parse({ brand: { name: "Fat of the Land", website: "eatfatoftheland.com", hq_state: "tx" }, contact: { name: "Donald", email: "D@X.COM" } });
     expect(p.brand.website).toBe("https://eatfatoftheland.com");
     expect(p.brand.hq_state).toBe("TX");
-    expect(p.contact.email).toBe("d@x.com");
+    expect(p.contact?.email).toBe("d@x.com");
     expect(p.products).toEqual([]);
+  });
+  it("lets the owner be added later", () => {
+    const p = brandSetupSchema.parse({ brand: { name: "Fat of the Land" } });
+    expect(p.contact ?? null).toBeNull();
   });
 });

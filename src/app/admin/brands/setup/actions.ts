@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/admin";
 import { brandSetupSchema, resolveNames } from "@/lib/brand-setup";
+import { ensureUser } from "@/lib/admin-accounts";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { APP_URL } from "@/lib/site";
 
 const go = (msg: { ok?: string; err?: string }, path = "/admin/brands/setup"): never => {
   revalidatePath("/admin/brands");
@@ -28,20 +28,23 @@ export async function setUpBrand(f: FormData) {
   const spec = parsed.data!;
   const db = createAdminClient();
 
-  // 1. The owner's account.
-  let { data: user } = await db.from("users").select("id, role").ilike("email", spec.contact.email).maybeSingle();
-  if (!user) {
-    const { data, error } = await db.auth.admin.createUser({ email: spec.contact.email, email_confirm: true, user_metadata: { name: spec.contact.name } });
-    if (error || !data.user) go({ err: `Couldn't create the account: ${error?.message ?? "unknown error"}` });
-    user = { id: data.user!.id, role: null };
-  }
-  await db.from("users").update({ name: spec.contact.name, phone: spec.contact.phone, role: "brand" }).eq("id", user!.id);
-
-  // 2. The brand organization (the one this person owns, or a new one).
-  const { data: membership } = await db.from("org_members").select("org_id, organizations(type)").eq("user_id", user!.id).maybeSingle();
-  let orgId = membership?.org_id as string | undefined;
-  if (orgId && (membership!.organizations as unknown as { type: string }).type !== "brand") go({ err: `${spec.contact.email} already belongs to a brokerage.` });
+  // 1. The owner's account (optional), created unverified: the emailed sign-in link verifies it.
   const orgFields = { name: spec.brand.name, website: spec.brand.website, hq_city: spec.brand.hq_city, hq_state: spec.brand.hq_state ?? null, ...(spec.brand.logo_url ? { logo_url: spec.brand.logo_url } : {}) };
+  let orgId: string | undefined;
+  let ownerId: string | null = null;
+  if (spec.contact) {
+    const u = await ensureUser(db, spec.contact.email, spec.contact.name, spec.contact.phone, "brand");
+    if ("error" in u) go({ err: (u as { error: string }).error });
+    ownerId = (u as { id: string }).id;
+    const { data: membership } = await db.from("org_members").select("org_id, organizations(type)").eq("user_id", ownerId).maybeSingle();
+    if (membership && (membership.organizations as unknown as { type: string }).type !== "brand") go({ err: `${spec.contact.email} already belongs to a brokerage.` });
+    orgId = membership?.org_id as string | undefined;
+  }
+  // 2. The brand: the owner's, else an owner-less brand Purvey set up earlier with this exact name, else a new one.
+  if (!orgId) {
+    const { data: prior } = await db.from("organizations").select("id, org_members(user_id)").eq("type", "brand").eq("name", spec.brand.name).eq("created_by", s.userId).maybeSingle();
+    if (prior && !((prior.org_members ?? []) as unknown[]).length) orgId = prior.id as string;
+  }
   if (!orgId) {
     const base = slugify(spec.brand.name);
     let slug = base;
@@ -50,13 +53,16 @@ export async function setUpBrand(f: FormData) {
       if (!taken) break;
       slug = `${base}-${n}`;
     }
-    const { data: org, error } = await db.from("organizations").insert({ type: "brand", slug, created_by: user!.id, ...orgFields }).select("id").single();
+    const { data: org, error } = await db.from("organizations").insert({ type: "brand", slug, created_by: ownerId ?? s.userId, ...orgFields }).select("id").single();
     if (error || !org) go({ err: `Couldn't create the brand: ${error?.message ?? "unknown error"}` });
     orgId = org!.id;
-    await db.from("org_members").insert({ org_id: orgId, user_id: user!.id, role: "owner" });
     await db.from("brand_profiles").insert({ org_id: orgId });
   } else {
     await db.from("organizations").update(orgFields).eq("id", orgId);
+  }
+  if (ownerId) {
+    const { data: m } = await db.from("org_members").select("org_id").eq("user_id", ownerId).maybeSingle();
+    if (!m) await db.from("org_members").insert({ org_id: orgId, user_id: ownerId, role: "owner" });
   }
 
   // 3. The full profile. Names are matched to Bench's lists; the rest go in "other".
@@ -94,16 +100,7 @@ export async function setUpBrand(f: FormData) {
     if (error) go({ err: `Profile saved, but product "${prod.name}" didn't: ${error.message}` });
   }
 
-  await db.from("product_events").insert({ name: "admin_brand_setup", user_id: s.userId, org_id: orgId, props: { brand: spec.brand.name, owner: spec.contact.email } });
+  await db.from("product_events").insert({ name: "admin_brand_setup", user_id: s.userId, org_id: orgId, props: { brand: spec.brand.name, owner: spec.contact?.email ?? null } });
   const unmatched = [...curD.other, ...tgtD.other];
-  go({ ok: `${spec.brand.name} is set up with ${spec.contact.name} (${spec.contact.email}) as owner: profile and ${spec.products.length} product${spec.products.length === 1 ? "" : "s"} saved. Nothing was sent to them.${unmatched.length ? ` Distributors not on Bench's list (add them under Lists): ${unmatched.join(", ")}.` : ""}` });
-}
-
-/** Email the brand owner a sign-in link. Only when Purvey chooses to; nothing sends on setup. */
-export async function sendBrandSignInLink(f: FormData) {
-  await requireAdmin();
-  const email = String(f.get("email") ?? "").trim().toLowerCase();
-  if (!/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(email)) go({ err: "Missing email." }, "/admin/brands");
-  const { error } = await createAdminClient().auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: `${APP_URL}/auth/confirm?next=${encodeURIComponent("/app/brand")}` } });
-  go(error ? { err: `Couldn't send the link: ${error.message}` } : { ok: `Sign-in link sent to ${email}.` }, "/admin/brands");
+  go({ ok: `${spec.brand.name} is set up${spec.contact ? ` with ${spec.contact.name} (${spec.contact.email}) as owner` : " with no owner yet (add one under Accounts)"}: profile and ${spec.products.length} product${spec.products.length === 1 ? "" : "s"} saved. Nothing was sent to them.${unmatched.length ? ` Distributors not on Bench's list (add them under Lists): ${unmatched.join(", ")}.` : ""}` });
 }

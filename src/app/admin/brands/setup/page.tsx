@@ -33,7 +33,7 @@ export default async function SetUpBrand({ searchParams }: { searchParams: Flash
       <h1 className="bench-h-section" style={{ fontSize: "1.75rem" }}>Set up a client brand</h1>
       <p className="bench-muted" style={{ margin: 0 }}>
         Creates the owner&rsquo;s account, the brand and its full profile and products. There&rsquo;s no password: owners sign in with an emailed link.
-        Nothing is sent to the brand until you press &ldquo;Send sign-in link&rdquo; on the <Link className="bench-link" href="/admin/brands">Brands</Link> tab.
+        Nothing is sent until you press &ldquo;Send sign-in link&rdquo; under <Link className="bench-link" href="/admin/accounts">Accounts</Link>. Leave out <code>contact</code> to build the profile first and add the owner later.
         Running it again with the same owner email updates that brand. Retailers, channels and categories not on Bench&rsquo;s lists are kept as typed.
       </p>
       <form action={setUpBrand} className="bench-stack">

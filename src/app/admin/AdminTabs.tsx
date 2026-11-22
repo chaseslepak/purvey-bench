@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const TABS = [
-  ["/admin", "Overview"], ["/admin/listings", "Listings"], ["/admin/verification", "Verification"], ["/admin/brands", "Brands"],
+  ["/admin", "Overview"], ["/admin/accounts", "Accounts"], ["/admin/listings", "Listings"], ["/admin/verification", "Verification"], ["/admin/brands", "Brands"],
   ["/admin/requests", "Requests"], ["/admin/reports", "Reports"], ["/admin/reviews", "Reviews"], ["/admin/lists", "Lists"], ["/admin/audit", "Audit log"],
 ] as const;
 

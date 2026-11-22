@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { setSuspended } from "../actions";
-import { sendBrandSignInLink } from "./setup/actions";
+import { sendLoginLink } from "../accounts/actions";
 import { Flash, type FlashParams } from "../Flash";
 import { fmtDate, requireAdmin } from "@/lib/admin";
 
@@ -44,8 +44,8 @@ export default async function AdminBrands({ searchParams }: { searchParams: Flas
                   <td>{fmtDate(b.created_at)}</td>
                   <td>
                     {owner?.email && (
-                      <form action={sendBrandSignInLink}>
-                        <input type="hidden" name="email" value={owner.email} />
+                      <form action={sendLoginLink}>
+                        <input type="hidden" name="orgId" value={b.id} /><input type="hidden" name="back" value={here} />
                         <button type="submit" className="bench-link-btn">Send sign-in link</button>
                       </form>
                     )}
