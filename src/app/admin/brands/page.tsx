@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { setSuspended } from "../actions";
+import { sendBrandSignInLink } from "./setup/actions";
 import { Flash, type FlashParams } from "../Flash";
 import { fmtDate, requireAdmin } from "@/lib/admin";
 
@@ -23,7 +24,8 @@ export default async function AdminBrands({ searchParams }: { searchParams: Flas
         <label className="bench-sr-only" htmlFor="bq">Search brands</label>
         <input id="bq" name="q" className="bench-input" defaultValue={q} placeholder="Search brands" style={{ maxWidth: 280 }} />
         <button type="submit" className="button is-small w-button">Search</button>
-        <a className="bench-link" href="/admin/export?kind=brands" style={{ marginLeft: "auto" }}>Export CSV</a>
+        <a className="bench-link" href="/admin/brands/setup" style={{ marginLeft: "auto" }}>Set up a client brand</a>
+        <a className="bench-link" href="/admin/export?kind=brands">Export CSV</a>
       </form>
       <p className="bench-small bench-muted" style={{ margin: 0 }}>Brands are free and never listed. Briefs stay private to each brand&rsquo;s team, so they aren&rsquo;t shown here.</p>
       <div className="bench-table-wrap">
@@ -41,6 +43,12 @@ export default async function AdminBrands({ searchParams }: { searchParams: Flas
                   <td>{placementCount.get(b.id) ?? 0}</td>
                   <td>{fmtDate(b.created_at)}</td>
                   <td>
+                    {owner?.email && (
+                      <form action={sendBrandSignInLink}>
+                        <input type="hidden" name="email" value={owner.email} />
+                        <button type="submit" className="bench-link-btn">Send sign-in link</button>
+                      </form>
+                    )}
                     <form action={setSuspended}>
                       <input type="hidden" name="orgId" value={b.id} /><input type="hidden" name="suspended" value={b.suspended_at ? "0" : "1"} /><input type="hidden" name="back" value={here} />
                       <button type="submit" className="bench-link-btn">{b.suspended_at ? "Lift suspension" : "Suspend"}</button>
