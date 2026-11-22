@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { setSuspended } from "../actions";
 import { sendLoginLink } from "../accounts/actions";
 import { Flash, type FlashParams } from "../Flash";
@@ -24,7 +25,7 @@ export default async function AdminBrands({ searchParams }: { searchParams: Flas
         <label className="bench-sr-only" htmlFor="bq">Search brands</label>
         <input id="bq" name="q" className="bench-input" defaultValue={q} placeholder="Search brands" style={{ maxWidth: 280 }} />
         <button type="submit" className="button is-small w-button">Search</button>
-        <a className="bench-link" href="/admin/brands/setup" style={{ marginLeft: "auto" }}>Set up a client brand</a>
+        <Link className="bench-link" href="/admin/brands/setup" style={{ marginLeft: "auto" }}>Set up a client brand</Link>
         <a className="bench-link" href="/admin/export?kind=brands">Export CSV</a>
       </form>
       <p className="bench-small bench-muted" style={{ margin: 0 }}>Brands are free and never listed. Briefs stay private to each brand&rsquo;s team, so they aren&rsquo;t shown here.</p>
@@ -37,7 +38,7 @@ export default async function AdminBrands({ searchParams }: { searchParams: Flas
               const owner = members.find((m) => m.role === "owner")?.users;
               return (
                 <tr key={b.id}>
-                  <td>{b.name}{b.suspended_at && <div className="bench-small bench-muted">Suspended {fmtDate(b.suspended_at)}</div>}{b.website && <div className="bench-small"><a className="bench-link" href={b.website} target="_blank" rel="noopener noreferrer">{b.website.replace(/^https?:\/\//, "")}</a></div>}</td>
+                  <td><Link className="bench-link" href={`/admin/brands/${b.id}`}>{b.name}</Link>{b.suspended_at && <div className="bench-small bench-muted">Suspended {fmtDate(b.suspended_at)}</div>}{b.website && <div className="bench-small"><a className="bench-link" href={b.website} target="_blank" rel="noopener noreferrer">{b.website.replace(/^https?:\/\//, "")}</a></div>}</td>
                   <td className="bench-small">{owner?.name ?? "—"}<br />{owner?.email}</td>
                   <td>{members.length}</td>
                   <td>{placementCount.get(b.id) ?? 0}</td>

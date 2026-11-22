@@ -81,7 +81,7 @@ export default async function Accounts({ searchParams }: { searchParams: FlashPa
                 const meta = (u?.app_metadata ?? {}) as { welcome_sent_at?: string; welcome_used_at?: string };
                 return (
                   <tr key={o.id}>
-                    <td>{o.name}<div className="bench-small bench-muted">{o.type === "broker" ? "Brokerage" : "Brand"} · added {fmtDate(o.created_at)}</div></td>
+                    <td>{o.type === "brand" ? <Link className="bench-link" href={`/admin/brands/${o.id}`}>{o.name}</Link> : o.name}<div className="bench-small bench-muted">{o.type === "broker" ? "Brokerage" : "Brand"} · added {fmtDate(o.created_at)}</div></td>
                     <td className="bench-small">
                       {owner?.users ? <>{owner.users.name ?? "—"}<br />{owner.users.email}</> : (
                         <form action={setOwner} className="bench-stack" style={{ gap: 6 }}>
