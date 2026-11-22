@@ -414,3 +414,8 @@ a.bench-market_item:hover { border-color: var(--pv-ink); }
 /* Broker kit */
 .bench-kit-list { margin: 0; padding-left: 1.25rem; display: grid; gap: 10px; max-width: 52rem; }
 .bench-copyblock { white-space: pre-wrap; font-family: var(--pv-font-body); font-size: 0.9375rem; line-height: 1.55; background: var(--pv-cream); border: 1px solid var(--pv-line-soft); border-radius: var(--pv-radius-card); padding: 20px; margin: 0; max-width: 52rem; }
+
+/* Two-option switch (sign in by link or password). */
+.bench-segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; background: var(--pv-cream); border-radius: var(--pv-radius-input); }
+.bench-segmented button { min-height: 40px; border: 0; border-radius: 9px; background: transparent; font: 500 0.9375rem/1 var(--pv-font-body); color: var(--pv-muted); cursor: pointer; }
+.bench-segmented button[aria-selected="true"] { background: var(--pv-white); color: var(--pv-ink); box-shadow: 0 1px 2px rgba(0,0,0,.08); }

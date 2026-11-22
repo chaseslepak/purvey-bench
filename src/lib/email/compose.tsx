@@ -125,7 +125,7 @@ export async function composeEmail(kind: Kind, payload: P, ctx: { appUrl: string
       paragraphs = [
         `Purvey set up ${s(payload.org)} on Purvey Bench for you${broker ? ": your broker listing is started, so brands can find you once it's published." : ", with your brand profile filled in from what you've shared with us."}`,
         ...(payload.note ? [`“${s(payload.note)}” — ${s(payload.from) || "Purvey"}`] : []),
-        `The button below signs you in and confirms your email in one step. It's just for ${s(payload.email)} and works for 14 days. There's no password: next time, sign in with your email at bench.purveycpg.com.`,
+        `The button below signs you in and confirms your email in one step. It's just for ${s(payload.email)} and works for 14 days. Next time, sign in at bench.purveycpg.com with an emailed link, or add a password in Settings.`,
         broker ? "Listing on Bench is free. Check your listing, add anything missing and publish it." : "Bench is free for brands. Check your profile, then search brokers who already call on the retailers you want.",
       ];
       cta = { label: "Sign in to Purvey Bench", href: s(payload.link) };

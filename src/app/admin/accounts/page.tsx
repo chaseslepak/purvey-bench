@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { sendLoginLink, setOwner, setUpAccount } from "./actions";
+import { sendLoginLink, setOwner, setTempPassword, setUpAccount } from "./actions";
 import { Flash, type FlashParams } from "../Flash";
 import { fmtDate, fmtDateTime, requireAdmin } from "@/lib/admin";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -26,7 +26,7 @@ export default async function Accounts({ searchParams }: { searchParams: FlashPa
         <Flash sp={sp} />
         <h1 className="bench-h-section" style={{ fontSize: "1.75rem" }}>Set up an account</h1>
         <p className="bench-muted" style={{ margin: 0 }}>
-          Create a brand or brokerage for someone, then email them a link that signs them in and verifies their email in one click. There are no passwords.
+          Create a brand or brokerage for someone, then email them a link that signs them in and verifies their email in one click. Owners can also sign in with a password: set a temporary one on their row, or they can add their own in Settings.
           Leave the owner&rsquo;s email blank to build the profile first and add them later. For a brand&rsquo;s full profile and products in one go, use the{" "}
           <Link className="bench-link" href="/admin/brands/setup">brand spec importer</Link>.
         </p>
@@ -103,6 +103,17 @@ export default async function Accounts({ searchParams }: { searchParams: FlashPa
                           <input type="hidden" name="orgId" value={o.id} />
                           <button type="submit" className="bench-link-btn">{meta.welcome_sent_at ? "Resend sign-in link" : "Send sign-in link"}</button>
                         </form>
+                      )}
+                      {owner?.users && (
+                        <details className="bench-small" style={{ marginTop: 6 }}>
+                          <summary className="bench-link-btn" style={{ listStyle: "none" }}>Set a password</summary>
+                          <form action={setTempPassword} className="bench-stack" style={{ gap: 6, marginTop: 6 }}>
+                            <input type="hidden" name="orgId" value={o.id} />
+                            <label className="bench-sr-only" htmlFor={`pw-${o.id}`}>Temporary password for {owner.users.email}</label>
+                            <input id={`pw-${o.id}`} name="password" type="text" autoComplete="off" minLength={8} required className="bench-input" placeholder="At least 8 characters" style={{ minHeight: 36 }} />
+                            <button type="submit" className="bench-link-btn" style={{ textAlign: "left" }}>Save password</button>
+                          </form>
+                        </details>
                       )}
                       {o.type === "broker" && <Link className="bench-link bench-small" href="/admin/listings">Listing</Link>}
                     </td>

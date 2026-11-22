@@ -59,6 +59,14 @@ export function SignUpForm({ initialRole, turnstileSiteKey, next }: { initialRol
         {err("email") && <p id="email-error" className="bench-error">{err("email")}</p>}
       </div>
 
+      <div className="bench-field">
+        <label htmlFor="password" className="bench-label">Password <span className="bench-muted">(optional)</span></label>
+        <input id="password" name="password" type="password" autoComplete="new-password" minLength={8} className="bench-input"
+          aria-invalid={Boolean(err("password"))} aria-describedby={err("password") ? "password-error" : "password-hint"} />
+        {err("password") ? <p id="password-error" className="bench-error">{err("password")}</p>
+          : <p id="password-hint" className="bench-hint" style={{ margin: 0 }}>At least 8 characters. Leave blank to sign in with emailed links instead.</p>}
+      </div>
+
       <Turnstile siteKey={turnstileSiteKey} onToken={ts.onToken} />
       {state?.error && <p className="bench-notice is-error" role="alert">{state.error}</p>}
 
@@ -66,7 +74,7 @@ export function SignUpForm({ initialRole, turnstileSiteKey, next }: { initialRol
         {pending ? "Sending…" : role === "broker" ? "Create my account" : "Create my free account"}
       </button>
       <p className="bench-small bench-muted">
-        We&rsquo;ll email you a link to finish signing up. By continuing you agree to the{" "}
+        We&rsquo;ll email you a link to confirm your address and finish signing up. By continuing you agree to the{" "}
         <a className="bench-link" href="/terms">Terms</a> and <a className="bench-link" href="/privacy">Privacy Policy</a>.
       </p>
     </form>
